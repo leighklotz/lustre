@@ -1,9 +1,15 @@
-from transformers import AutoTokenizer, AutoModel
+#!/usr/bine/env python3
+import os
 import numpy as np
-from sklearn.decomposition import PCA
-from sklearn.metrics.pairwise import cosine_similarity
 import hdbscan
 import torch
+
+# see .env for export
+assert os.getenv('HF_TOKEN', '') != ''
+
+from transformers import AutoTokenizer, AutoModel
+from sklearn.decomposition import PCA
+from sklearn.metrics.pairwise import cosine_similarity
 
 # Load CodeBERT
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
@@ -53,8 +59,9 @@ reduced_embeddings = pca.fit_transform(embeddings)
 
 # HDBSCAN Clustering
 # Pass the precomputed distance matrix to hdbscan
-cosine_sim = cosine_similarity(reduced_embeddings)
-clusterer = hdbscan.HDBSCAN(metric='precomputed', cluster_selection_epsilon=0.0) # Adjust epsilon value
+cosine_sim = cosine_similarity(reduced_embeddings).astype(np.float64)
+# Adjust epsilon value
+clusterer = hdbscan.HDBSCAN(metric='cosine', cluster_selection_epsilon=0.0)
 cluster_labels = clusterer.fit_predict(cosine_sim)
 
 # Print results
