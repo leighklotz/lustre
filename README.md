@@ -1,9 +1,12 @@
 # SPL Cluster
 
 This project clusters SPL queries by similarity. You should sanitize your queries first.
+You might want to sort your queries by popularity or cost first.
 
 # Installation
 ```
+$ python --version
+Python 3.12.3
 $ python3 -m venv .venv
 $ . .venv/bin/activate
 $ pip install -r requirements.txt 
@@ -49,5 +52,9 @@ Cluster 6:
 ```
 
 # TODO
-
-Tuning.
+- Tuning: depends on query count, number of desired clusters
+- Input: Read queries from a CSV file instead of sample data inline
+- Output: Output all the clusters, but instead of all queries in each
+cluster, output a sample query for each cluster,
+and output the query ID (input row numbers) instead of the full query 
+for the rest
