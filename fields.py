@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import os
 import numpy as np
 import hdbscan
@@ -9,7 +10,8 @@ from sklearn.decomposition import PCA
 from sklearn.metrics.pairwise import cosine_similarity
 
 # Optional: ensure you exported HF_TOKEN if you expect to use gated models.
-# CodeBERT itself is public, so this is not strictly required.
+# CodeBERT itself is public, but Hugging Face will give you an "unauthenticated" warning
+# on download.
 # assert os.getenv("HF_TOKEN", "") != ""
 
 # Load CodeBERT
@@ -82,8 +84,10 @@ for query, label in zip(spl_queries, cluster_labels):
         clusters[label] = []
     clusters[label].append(query)
 
-for label, queries in clusters.items():
-    print(f"Cluster {label}:")
-    for query in queries:
-        print(f"- {query}")
+# Sort cluster keys to print in numerical order
+sorted_cluster_keys = sorted(clusters.keys())
 
+for label in sorted_cluster_keys:
+    print(f"Cluster {label}:")
+    for query in clusters[label]:
+        print(f"- {query}")
