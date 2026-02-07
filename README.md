@@ -1,13 +1,17 @@
 # SPL Cluster
 
-This project clusters SPL queries by similarity.
+This project clusters SPL queries by similarity. You should sanitize your queries first.
 
+# Installation
 ```
 $ python3 -m venv .venv
 $ . .venv/bin/activate
 $ pip install -r requirements.txt 
 ```
 
+# Example Run
+
+```
 $ python fields.py 
 Cluster -1:
 - stats sum(bytes) as b by host, user
@@ -43,3 +47,7 @@ Cluster 6:
 (.venv) $ 
 
 ```
+
+# TODO
+
+Tuning.
