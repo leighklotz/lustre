@@ -137,7 +137,7 @@ def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=N
             cluster_embeddings = reduced_embeddings[indices]
             
             # Calculate centroid
-            centroid = cluster_embeddings.mean(axis=0)
+            centroid = np.mean(cluster_embeddings, axis=0)
             
             # Find query closest to centroid
             distances = np.linalg.norm(cluster_embeddings - centroid, axis=1)
@@ -203,7 +203,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Cluster SPL queries using CodeBERT and HDBSCAN.")
     parser.add_argument("--input", type=str, help="Path to the CSV file containing SPL queries.")
     parser.add_argument("--aggregate", action="store_true", 
-                        help="Print one line per cluster with aggregated metadata and centroid query.")
+                        help="Print one line per cluster with the most representative query (closest to centroid), summed runtime and runcount values, and all unique users.")
     args = parser.parse_args()
     
     if args.input:
