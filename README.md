@@ -18,7 +18,7 @@ $ pip install -r requirements.txt
 ```
 
 # Example Run
-(.venv) $ python fields.py   --aggregate --input samples.csv
+(.venv) $ python cluster.py --aggregate --input samples.csv
 Loading weights: 100%|█| 199/199 [00:00<00:00, 1447.87it/s, Materializing param=pooler.dense.
 cluster,query,runtime,runcount,users
 -1,"stats sum(bytes) as b by host, user",670,8,"""user3 ""user4 user13"" user21"""
@@ -46,7 +46,7 @@ query,count,runtime,users
 ## Sample usage
 ```bash
 $ python cluster.py --aggregate --input samples.csv
-(.venv) $ python fields.py --aggregate --input samples.csv
+(.venv) $ python cluster.py --aggregate --input samples.csv
 Loading weights: 100%|█| 199/199 [00:00<00:00, 1621.57it/s, Materializing param=pooler.dense.
 cluster,query,runtime,runcount,users
 -1,"stats sum(bytes) as b by host,user",670,8,user13 user21 user3 user4
