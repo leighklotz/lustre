@@ -1,4 +1,4 @@
-query,count,runtime,users
+query,runtime,count,users
 "index=web sourcetype=apache_error warn",1434,7,user1 user3
 "stats count by user",100,5,user2 user4
 "search index=main sourcetype=access_combined status=404",500,3,user1 user5

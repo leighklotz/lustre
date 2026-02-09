@@ -126,7 +126,7 @@ def print_clusters_all_queries(csv_writer, clusters):
     # Sort cluster keys to print in numerical order
     sorted_cluster_keys = sorted(clusters.keys())
     for cluster_id in sorted_cluster_keys:
-        cluster_size = len(cluster_queries)
+        cluster_size = len(clusters[cluster_id])
         for cluster in clusters[cluster_id]:
             (query, runtime, runcount, users) = cluster
             csv_writer.writerow([ cluster_id, cluster_size, query, runtime, runcount, users ])
