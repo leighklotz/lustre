@@ -6,6 +6,7 @@ import numpy as np
 import hdbscan
 import torch
 import csv
+import warnings
 
 from transformers import AutoTokenizer, AutoModel
 from sklearn.decomposition import PCA
@@ -84,28 +85,92 @@ def load_queries_from_csv(csv_file):
     return queries
 
 
-def print_clusters(query_label_pairs, out):
+def normalize_users(users_data):
+    """
+    Normalize users data to space-separated string format.
+    
+    Args:
+        users_data: Either a list of users or a comma-separated string
+    
+    Returns:
+        str: Space-separated string of users
+    """
+    if isinstance(users_data, list):
+        return ' '.join(users_data)
+    elif isinstance(users_data, str):
+        # Convert comma-separated to space-separated
+        if ',' in users_data:
+            return ' '.join(u.strip() for u in users_data.split(',') if u.strip())
+        return users_data
+    return str(users_data)
+
+
+def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=None):
     csv_writer = csv.writer(out)
     csv_headers = [ 'cluster', 'query', 'runtime', 'runcount', 'users' ]
     csv_writer.writerow(csv_headers) 
 
     # Get the clusters in numerical order
     clusters = {}
-    for query, label in query_label_pairs:
+    cluster_indices = {}  # Track original indices for embeddings
+    for idx, (query, label) in enumerate(query_label_pairs):
         if label not in clusters:
             clusters[label] = []
+            cluster_indices[label] = []
         clusters[label].append(query)
+        cluster_indices[label].append(idx)
 
     # Sort cluster keys to print in numerical order
     sorted_cluster_keys = sorted(clusters.keys())
 
-    for cluster_id in sorted_cluster_keys:
-        for cluster in clusters[cluster_id]:
-            (query, runtime, runcount, users) = cluster
-            users = ' '.join(users)
-            csv_writer.writerow([ cluster_id, query, runtime, runcount, users ])
+    if aggregate and reduced_embeddings is None:
+        # Warn if aggregate is requested but embeddings are not available
+        warnings.warn("Aggregate mode requested but reduced_embeddings not provided. Falling back to default mode.", UserWarning)
 
-def main(spl_queries):
+    if aggregate and reduced_embeddings is not None:
+        # Aggregate mode: one line per cluster
+        for cluster_id in sorted_cluster_keys:
+            cluster_queries = clusters[cluster_id]
+            indices = cluster_indices[cluster_id]
+            
+            # Get embeddings for this cluster
+            cluster_embeddings = reduced_embeddings[indices]
+            
+            # Calculate centroid
+            centroid = np.mean(cluster_embeddings, axis=0)
+            
+            # Find query closest to centroid
+            distances = np.linalg.norm(cluster_embeddings - centroid, axis=1)
+            closest_idx = np.argmin(distances)
+            centroid_query = cluster_queries[closest_idx]
+            
+            # Aggregate metadata
+            total_runtime = sum(q[1] for q in cluster_queries)
+            total_runcount = sum(q[2] for q in cluster_queries)
+            
+            # Collect unique users
+            all_users = set()
+            for q in cluster_queries:
+                users_data = q[3]
+                # Use normalize_users helper to handle different formats
+                normalized = normalize_users(users_data)
+                all_users.update(normalized.split())
+            
+            # Sort users for consistent output
+            sorted_users = ' '.join(sorted(all_users))
+            
+            # Output aggregated row
+            csv_writer.writerow([cluster_id, centroid_query[0], total_runtime, total_runcount, sorted_users])
+    else:
+        # Default mode: all queries
+        for cluster_id in sorted_cluster_keys:
+            for cluster in clusters[cluster_id]:
+                (query, runtime, runcount, users) = cluster
+                # Normalize users to space-separated format
+                users = normalize_users(users)
+                csv_writer.writerow([ cluster_id, query, runtime, runcount, users ])
+
+def main(spl_queries, aggregate=False):
     # build embedding matrix: (n_samples, hidden)
     embeddings = np.vstack([get_embedding(q[0]) for q in spl_queries]).astype(np.float64)
 
@@ -128,7 +193,8 @@ def main(spl_queries):
 
     cluster_labels = clusterer.fit_predict(D)
 
-    print_clusters(zip(spl_queries, cluster_labels), sys.stdout)
+    print_clusters(zip(spl_queries, cluster_labels), sys.stdout, 
+                   aggregate=aggregate, reduced_embeddings=reduced_embeddings)
 
 
 if __name__ == "__main__":
@@ -136,6 +202,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Cluster SPL queries using CodeBERT and HDBSCAN.")
     parser.add_argument("--input", type=str, help="Path to the CSV file containing SPL queries.")
+    parser.add_argument("--aggregate", action="store_true", 
+                        help="Print one line per cluster with the most representative query (closest to centroid), summed runtime and runcount values, and all unique users.")
     args = parser.parse_args()
     
     if args.input:
@@ -144,5 +212,5 @@ if __name__ == "__main__":
         # Example Usage (Replace With Your Spl Queries)
         spl_queries = SPL_QUERY_SAMPLES
 
-    main(spl_queries)
+    main(spl_queries, aggregate=args.aggregate)
 
