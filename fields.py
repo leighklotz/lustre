@@ -152,11 +152,9 @@ def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=N
             all_users = set()
             for q in cluster_queries:
                 users_data = q[3]
-                if isinstance(users_data, list):
-                    all_users.update(users_data)
-                elif isinstance(users_data, str):
-                    # Handle comma-separated string
-                    all_users.update(u.strip() for u in users_data.split(',') if u.strip())
+                # Use normalize_users helper to handle different formats
+                normalized = normalize_users(users_data)
+                all_users.update(normalized.split())
             
             # Sort users for consistent output
             sorted_users = ' '.join(sorted(all_users))
