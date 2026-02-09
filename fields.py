@@ -84,28 +84,69 @@ def load_queries_from_csv(csv_file):
     return queries
 
 
-def print_clusters(query_label_pairs, out):
+def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=None):
     csv_writer = csv.writer(out)
     csv_headers = [ 'cluster', 'query', 'runtime', 'runcount', 'users' ]
     csv_writer.writerow(csv_headers) 
 
     # Get the clusters in numerical order
     clusters = {}
-    for query, label in query_label_pairs:
+    cluster_indices = {}  # Track original indices for embeddings
+    for idx, (query, label) in enumerate(query_label_pairs):
         if label not in clusters:
             clusters[label] = []
+            cluster_indices[label] = []
         clusters[label].append(query)
+        cluster_indices[label].append(idx)
 
     # Sort cluster keys to print in numerical order
     sorted_cluster_keys = sorted(clusters.keys())
 
-    for cluster_id in sorted_cluster_keys:
-        for cluster in clusters[cluster_id]:
-            (query, runtime, runcount, users) = cluster
-            users = ' '.join(users)
-            csv_writer.writerow([ cluster_id, query, runtime, runcount, users ])
+    if aggregate and reduced_embeddings is not None:
+        # Aggregate mode: one line per cluster
+        for cluster_id in sorted_cluster_keys:
+            cluster_queries = clusters[cluster_id]
+            indices = cluster_indices[cluster_id]
+            
+            # Get embeddings for this cluster
+            cluster_embeddings = reduced_embeddings[indices]
+            
+            # Calculate centroid
+            centroid = cluster_embeddings.mean(axis=0)
+            
+            # Find query closest to centroid
+            distances = np.linalg.norm(cluster_embeddings - centroid, axis=1)
+            closest_idx = np.argmin(distances)
+            centroid_query = cluster_queries[closest_idx]
+            
+            # Aggregate metadata
+            total_runtime = sum(q[1] for q in cluster_queries)
+            total_runcount = sum(q[2] for q in cluster_queries)
+            
+            # Collect unique users
+            all_users = set()
+            for q in cluster_queries:
+                users_data = q[3]
+                if isinstance(users_data, list):
+                    all_users.update(users_data)
+                elif isinstance(users_data, str):
+                    # Handle comma-separated string
+                    all_users.update(u.strip() for u in users_data.split(',') if u.strip())
+            
+            # Sort users for consistent output
+            sorted_users = ' '.join(sorted(all_users))
+            
+            # Output aggregated row
+            csv_writer.writerow([cluster_id, centroid_query[0], total_runtime, total_runcount, sorted_users])
+    else:
+        # Default mode: all queries
+        for cluster_id in sorted_cluster_keys:
+            for cluster in clusters[cluster_id]:
+                (query, runtime, runcount, users) = cluster
+                users = ' '.join(users)
+                csv_writer.writerow([ cluster_id, query, runtime, runcount, users ])
 
-def main(spl_queries):
+def main(spl_queries, aggregate=False):
     # build embedding matrix: (n_samples, hidden)
     embeddings = np.vstack([get_embedding(q[0]) for q in spl_queries]).astype(np.float64)
 
@@ -128,7 +169,8 @@ def main(spl_queries):
 
     cluster_labels = clusterer.fit_predict(D)
 
-    print_clusters(zip(spl_queries, cluster_labels), sys.stdout)
+    print_clusters(zip(spl_queries, cluster_labels), sys.stdout, 
+                   aggregate=aggregate, reduced_embeddings=reduced_embeddings)
 
 
 if __name__ == "__main__":
@@ -136,6 +178,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Cluster SPL queries using CodeBERT and HDBSCAN.")
     parser.add_argument("--input", type=str, help="Path to the CSV file containing SPL queries.")
+    parser.add_argument("--aggregate", action="store_true", 
+                        help="Print one line per cluster with aggregated metadata and centroid query.")
     args = parser.parse_args()
     
     if args.input:
@@ -144,5 +188,5 @@ if __name__ == "__main__":
         # Example Usage (Replace With Your Spl Queries)
         spl_queries = SPL_QUERY_SAMPLES
 
-    main(spl_queries)
+    main(spl_queries, aggregate=args.aggregate)
 
