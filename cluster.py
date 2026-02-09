@@ -17,7 +17,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 # on download.
 # assert os.getenv("HF_TOKEN", "") != ""
 
-SPL_QUERY_SAMPLES = [
+QUERY_SAMPLES = [
     # query,count,runtime,users
     ('index=web sourcetype=apache_error warn', 1434, 7, 'user1 user3'),
     ('stats count by user', 100, 5, 'user2 user4'),
@@ -65,7 +65,7 @@ def load_queries_from_csv(csv_file):
     The CSV file should have the following format:
     query,count,runtime,users
     where:
-        query is the SPL query string.
+        query is the query string.
         count number of times query is run
         runtime is the runtime of the query (across all times run)
         users is a string representing a list of users
@@ -178,8 +178,8 @@ def main(spl_queries, aggregate=False):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Cluster SPL queries using CodeBERT and HDBSCAN.")
-    parser.add_argument("--input", type=str, help="Path to the CSV file containing SPL queries.")
+    parser = argparse.ArgumentParser(description="Cluster queries using CodeBERT and HDBSCAN.")
+    parser.add_argument("--input", type=str, help="Path to the CSV file containing queries.")
     parser.add_argument("--aggregate", action="store_true", 
                         help="Print one line per cluster with the most representative query (closest to centroid), summed runtime and runcount values, and all unique users.")
     args = parser.parse_args()
@@ -188,6 +188,6 @@ if __name__ == "__main__":
         spl_queries = load_queries_from_csv(args.input)
     else:
         # Example Usage (Replace With Your Spl Queries)
-        spl_queries = SPL_QUERY_SAMPLES
+        spl_queries = QUERY_SAMPLES
 
     main(spl_queries, aggregate=args.aggregate)

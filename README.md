@@ -1,6 +1,6 @@
-# SPL Cluster
+# Query Cluster
 
-This project clusters SPL queries by similarity. You should sanitize your queries first.
+This project clusters queries by similarity. You should sanitize your queries first.
 
 Cluster sanitized_query into similarity groups.
 
