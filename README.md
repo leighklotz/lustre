@@ -11,7 +11,7 @@ query,count,runtime,users
 ```
 
 ## Output fields
-- cluster_id
+- cluster_id (-1 for outlier cluster)
 - cluster size
 - representative query (cluster centroid)
 - total run time
