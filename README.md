@@ -21,6 +21,7 @@ $ . .venv/bin/activate
 ```
 
 # Example Run
+```
 (.venv) $ python cluster.py --aggregate --input samples.csv
 Loading weights: 100%|█| 199/199 [00:00<00:00, 1630.67it/s, Materializing param=pooler.dense.
 cluster,query,runtime,runcount,users
