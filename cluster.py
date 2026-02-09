@@ -90,7 +90,7 @@ def load_queries_from_csv(csv_file):
 def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=None):
     csv_writer = csv.writer(out)
     csv_headers = [ 'cluster', 'query', 'runtime', 'runcount', 'users' ]
-    csv_writer.writerow(csv_headers) 
+    csv_writer.writerow(csv_headers)
 
     # Get the clusters in numerical order
     clusters = {}
@@ -114,31 +114,31 @@ def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=N
         for cluster_id in sorted_cluster_keys:
             cluster_queries = clusters[cluster_id]
             indices = cluster_indices[cluster_id]
-            
+
             # Get embeddings for this cluster
             cluster_embeddings = reduced_embeddings[indices]
-            
+
             # Calculate centroid
             centroid = np.mean(cluster_embeddings, axis=0)
-            
+
             # Find query closest to centroid
             distances = np.linalg.norm(cluster_embeddings - centroid, axis=1)
             closest_idx = np.argmin(distances)
             centroid_query = cluster_queries[closest_idx]
-            
+
             # Aggregate metadata
             total_runtime = sum(q[1] for q in cluster_queries)
             total_runcount = sum(q[2] for q in cluster_queries)
-            
+
             # Collect unique users
             all_users = set()
             for q in cluster_queries:
                 users_data = q[3]
                 all_users.update(users_data.split())
-            
+
             # Sort users for consistent output
             sorted_users = ' '.join(sorted(all_users))
-            
+
             # Output aggregated row
             csv_writer.writerow([cluster_id, centroid_query[0], total_runtime, total_runcount, sorted_users])
     else:
@@ -171,7 +171,7 @@ def main(spl_queries, aggregate=False):
 
     cluster_labels = clusterer.fit_predict(D)
 
-    print_clusters(zip(spl_queries, cluster_labels), sys.stdout, 
+    print_clusters(zip(spl_queries, cluster_labels), sys.stdout,
                    aggregate=aggregate, reduced_embeddings=reduced_embeddings)
 
 
@@ -180,10 +180,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Cluster queries using CodeBERT and HDBSCAN.")
     parser.add_argument("--input", type=str, help="Path to the CSV file containing queries.")
-    parser.add_argument("--aggregate", action="store_true", 
+    parser.add_argument("--aggregate", action="store_true",
                         help="Print one line per cluster with the most representative query (closest to centroid), summed runtime and runcount values, and all unique users.")
     args = parser.parse_args()
-    
+
     if args.input:
         spl_queries = load_queries_from_csv(args.input)
     else:
