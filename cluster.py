@@ -74,7 +74,8 @@ def load_queries_from_csv(csv_file):
         csv_file (str): Path to the CSV file.
 
     Returns:
-        list: A list of tuples, where each tuple contains the query string, count, number of users, and list of users.
+        list: A list of tuples, where each tuple contains the query string
+        count, number of users, and list of users.
     """
     queries = []
     with open(csv_file, 'r') as f:
@@ -104,10 +105,6 @@ def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=N
 
     # Sort cluster keys to print in numerical order
     sorted_cluster_keys = sorted(clusters.keys())
-
-    if aggregate and reduced_embeddings is None:
-        # Warn if aggregate is requested but embeddings are not available
-        warnings.warn("Aggregate mode requested but reduced_embeddings not provided. Falling back to default mode.", UserWarning)
 
     if aggregate and reduced_embeddings is not None:
         # Aggregate mode: one line per cluster
