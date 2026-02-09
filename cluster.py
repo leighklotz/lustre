@@ -104,47 +104,55 @@ def print_clusters(query_label_pairs, out, show_all_queries, reduced_embeddings)
         clusters[label].append(query)
         cluster_indices[label].append(idx)
 
+    if not show_all_queries:
+        print_clusters_sample_query(csv_writer, clusters, cluster_indices, reduced_embeddings)
+    else:
+        print_clusters_all_queries(csv_writer, clusters)
+
+# one line per query
+def print_clusters_all_queries(csv_writer, clusters):
     # Sort cluster keys to print in numerical order
     sorted_cluster_keys = sorted(clusters.keys())
+    for cluster_id in sorted_cluster_keys:
+        for cluster in clusters[cluster_id]:
+            (query, runtime, runcount, users) = cluster
+            csv_writer.writerow([ cluster_id, query, runtime, runcount, users ])
 
-    if not show_all_queries:
-        # Aggregate mode: one line per cluster
-        for cluster_id in sorted_cluster_keys:
-            cluster_queries = clusters[cluster_id]
-            indices = cluster_indices[cluster_id]
+# one line per cluster, with sample query and aggregated metrics
+def print_clusters_sample_query(csv_writer, clusters, cluster_indices, reduced_embeddings):
+    # Sort cluster keys to print in numerical order
+    sorted_cluster_keys = sorted(clusters.keys())
+    for cluster_id in sorted_cluster_keys:
+        cluster_queries = clusters[cluster_id]
+        indices = cluster_indices[cluster_id]
 
-            # Get embeddings for this cluster
-            cluster_embeddings = reduced_embeddings[indices]
+        # Get embeddings for this cluster
+        cluster_embeddings = reduced_embeddings[indices]
 
-            # Calculate centroid
-            centroid = np.mean(cluster_embeddings, axis=0)
+        # Calculate centroid
+        centroid = np.mean(cluster_embeddings, axis=0)
 
-            # Find query closest to centroid
-            distances = np.linalg.norm(cluster_embeddings - centroid, axis=1)
-            closest_idx = np.argmin(distances)
-            centroid_query = cluster_queries[closest_idx]
+        # Find query closest to centroid
+        distances = np.linalg.norm(cluster_embeddings - centroid, axis=1)
+        closest_idx = np.argmin(distances)
+        centroid_query = cluster_queries[closest_idx]
 
-            # Aggregate metadata
-            total_runtime = sum(q[1] for q in cluster_queries)
-            total_runcount = sum(q[2] for q in cluster_queries)
+        # Aggregate metadata
+        total_runtime = sum(q[1] for q in cluster_queries)
+        total_runcount = sum(q[2] for q in cluster_queries)
 
-            # Collect unique users
-            all_users = set()
-            for q in cluster_queries:
-                users_data = q[3]
-                all_users.update(users_data.split())
+        # Collect unique users
+        all_users = set()
+        for q in cluster_queries:
+            users_data = q[3]
+            all_users.update(users_data.split())
 
-            # Sort users for consistent output
-            sorted_users = ' '.join(sorted(all_users))
+        # Sort users for consistent output
+        sorted_users = ' '.join(sorted(all_users))
 
-            # Output aggregated row
-            csv_writer.writerow([cluster_id, centroid_query[0], total_runtime, total_runcount, sorted_users])
-    else:
-        # Default mode: all queries
-        for cluster_id in sorted_cluster_keys:
-            for cluster in clusters[cluster_id]:
-                (query, runtime, runcount, users) = cluster
-                csv_writer.writerow([ cluster_id, query, runtime, runcount, users ])
+        # Output aggregated row
+        csv_writer.writerow([cluster_id, centroid_query[0], total_runtime, total_runcount, sorted_users])
+
 
 def main(spl_queries, show_all_queries=False):
     # build embedding matrix: (n_samples, hidden)
