@@ -6,7 +6,10 @@ Cluster sanitized_query into similarity groups.
 
 ## Output fields
 - query_cluster_id (cluster identifier)
-- One cluster_centroid_query or representative_query [TODO]
+- One cluster centroid query as representative query 
+- Total run count
+- Total run time
+- List of Users
 
 # Installation
 ```
