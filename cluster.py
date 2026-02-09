@@ -29,7 +29,7 @@ MIN_CLUSTER_SIZE=2
 # assert os.getenv("HF_TOKEN", "") != ""
 
 QUERY_SAMPLES = [
-    # query,count,runtime,users
+    # query,runtime,count,users
     ('index=web sourcetype=apache_error warn', 1434, 7, 'user1 user3'),
     ('stats count by user', 100, 5, 'user2 user4'),
     ('search index=main sourcetype=access_combined status=404', 500, 3, 'user1 user5'),
@@ -72,8 +72,8 @@ def load_queries_from_csv(csv_file):
     query,count,runtime,users
     where:
         query is the query string.
-        count number of times query is run
         runtime is the runtime of the query (across all times run)
+        count number of times query is run
         users is a string representing a list of users
 
     Args:
@@ -87,10 +87,10 @@ def load_queries_from_csv(csv_file):
     with open(csv_file, 'r') as f:
         reader = csv.reader(f)
         header = next(reader)  # Skip the header row
-        assert header == ['query', 'count', 'runtime', 'users']
+        assert header == ['query', 'runtime', 'count', 'users']
         for row in reader:
-            query, count, runtime, users = row
-            queries.append((query, int(count), int(runtime), users))
+            query, runtime, count, users = row
+            queries.append((query, int(runtime), int(count), users))
     return queries
 
 
@@ -111,7 +111,7 @@ def get_clusters(query_label_pairs):
 
 def print_clusters(query_label_pairs, out, show_all_queries, reduced_embeddings):
     csv_writer = csv.writer(out)
-    csv_headers = [ 'cluster', 'query', 'runtime', 'runcount', 'users' ]
+    csv_headers = [ 'cluster', 'cluster_size', 'query', 'runcount', 'runtime', 'users' ]
     csv_writer.writerow(csv_headers)
 
     clusters, cluster_indices = get_clusters(query_label_pairs)
@@ -126,9 +126,10 @@ def print_clusters_all_queries(csv_writer, clusters):
     # Sort cluster keys to print in numerical order
     sorted_cluster_keys = sorted(clusters.keys())
     for cluster_id in sorted_cluster_keys:
+        cluster_size = len(cluster_queries)
         for cluster in clusters[cluster_id]:
             (query, runtime, runcount, users) = cluster
-            csv_writer.writerow([ cluster_id, query, runtime, runcount, users ])
+            csv_writer.writerow([ cluster_id, cluster_size, query, runtime, runcount, users ])
 
 # one line per cluster, with sample query and aggregated metrics
 def print_clusters_sample_query(csv_writer, clusters, cluster_indices, reduced_embeddings):
@@ -137,6 +138,7 @@ def print_clusters_sample_query(csv_writer, clusters, cluster_indices, reduced_e
     for cluster_id in sorted_cluster_keys:
         cluster_queries = clusters[cluster_id]
         indices = cluster_indices[cluster_id]
+        cluster_size = len(cluster_queries)
 
         # Get embeddings for this cluster
         cluster_embeddings = reduced_embeddings[indices]
@@ -163,7 +165,7 @@ def print_clusters_sample_query(csv_writer, clusters, cluster_indices, reduced_e
         sorted_users = ' '.join(sorted(all_users))
 
         # Output aggregated row
-        csv_writer.writerow([cluster_id, centroid_query[0], total_runtime, total_runcount, sorted_users])
+        csv_writer.writerow([cluster_id, cluster_size, centroid_query[0], total_runtime, total_runcount, sorted_users])
 
 
 def main(spl_queries, show_all_queries=False, min_cluster_size=MIN_CLUSTER_SIZE):
