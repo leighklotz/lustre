@@ -88,7 +88,7 @@ def load_queries_from_csv(csv_file):
     return queries
 
 
-def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=None):
+def print_clusters(query_label_pairs, out, aggregate, reduced_embeddings):
     csv_writer = csv.writer(out)
     csv_headers = [ 'cluster', 'query', 'runtime', 'runcount', 'users' ]
     csv_writer.writerow(csv_headers)
@@ -169,7 +169,7 @@ def main(spl_queries, aggregate=False):
     cluster_labels = clusterer.fit_predict(D)
 
     print_clusters(zip(spl_queries, cluster_labels), sys.stdout,
-                   aggregate=aggregate, reduced_embeddings=reduced_embeddings)
+                   aggregate, reduced_embeddings)
 
 
 if __name__ == "__main__":
