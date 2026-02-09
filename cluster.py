@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 
+import argparse
+import csv
+import hdbscan
+import numpy as np
 import os
 import sys
-import numpy as np
-import hdbscan
 import torch
-import csv
 import warnings
 
 from transformers import AutoTokenizer, AutoModel
 from sklearn.decomposition import PCA
 from sklearn.metrics.pairwise import cosine_similarity
+
+# Load CodeBERT
+tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
+model = AutoModel.from_pretrained("microsoft/codebert-base")
+model.eval()
 
 # Optional: ensure you exported HF_TOKEN if you expect to use gated models.
 # CodeBERT itself is public, but Hugging Face will give you an "unauthenticated" warning
@@ -43,11 +49,6 @@ QUERY_SAMPLES = [
     ('search index=web sourcetype=apache_access status=404', 620, 5, 'user5 user24'),
     ('index=web sourcetype=apache_error debug', 230, 2, 'user1 user25')
 ]
-
-# Load CodeBERT
-tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
-model = AutoModel.from_pretrained("microsoft/codebert-base")
-model.eval()
 
 def get_embedding(text: str) -> np.ndarray:
     """Return a single (hidden_size,) embedding vector for `text`."""
@@ -88,7 +89,7 @@ def load_queries_from_csv(csv_file):
     return queries
 
 
-def print_clusters(query_label_pairs, out, aggregate, reduced_embeddings):
+def print_clusters(query_label_pairs, out, show_all_queries, reduced_embeddings):
     csv_writer = csv.writer(out)
     csv_headers = [ 'cluster', 'query', 'runtime', 'runcount', 'users' ]
     csv_writer.writerow(csv_headers)
@@ -106,7 +107,7 @@ def print_clusters(query_label_pairs, out, aggregate, reduced_embeddings):
     # Sort cluster keys to print in numerical order
     sorted_cluster_keys = sorted(clusters.keys())
 
-    if aggregate and reduced_embeddings is not None:
+    if not show_all_queries:
         # Aggregate mode: one line per cluster
         for cluster_id in sorted_cluster_keys:
             cluster_queries = clusters[cluster_id]
@@ -145,7 +146,7 @@ def print_clusters(query_label_pairs, out, aggregate, reduced_embeddings):
                 (query, runtime, runcount, users) = cluster
                 csv_writer.writerow([ cluster_id, query, runtime, runcount, users ])
 
-def main(spl_queries, aggregate=False):
+def main(spl_queries, show_all_queries=False):
     # build embedding matrix: (n_samples, hidden)
     embeddings = np.vstack([get_embedding(q[0]) for q in spl_queries]).astype(np.float64)
 
@@ -169,22 +170,23 @@ def main(spl_queries, aggregate=False):
     cluster_labels = clusterer.fit_predict(D)
 
     print_clusters(zip(spl_queries, cluster_labels), sys.stdout,
-                   aggregate, reduced_embeddings)
+                   show_all_queries, reduced_embeddings)
 
 
 if __name__ == "__main__":
-    import argparse
 
-    parser = argparse.ArgumentParser(description="Cluster queries using CodeBERT and HDBSCAN.")
+    parser = argparse.ArgumentParser(description="Cluster queries using CodeBERT "
+                                     "and HDBSCAN. Print one line per cluster with "
+                                     " one most representative query and aggregated "
+                                     "metrics for the cluster.")
     parser.add_argument("--input", type=str, help="Path to the CSV file containing queries.")
-    parser.add_argument("--aggregate", action="store_true",
-                        help="Print one line per cluster with the most representative query (closest to centroid), summed runtime and runcount values, and all unique users.")
+    parser.add_argument("--show-all-queries", action="store_true",
+                        help="Show all queries in cluster and do not aggregate metrics")
     args = parser.parse_args()
 
     if args.input:
         spl_queries = load_queries_from_csv(args.input)
     else:
-        # Example Usage (Replace With Your Spl Queries)
         spl_queries = QUERY_SAMPLES
 
-    main(spl_queries, aggregate=args.aggregate)
+    main(spl_queries, show_all_queries=args.show_all_queries)

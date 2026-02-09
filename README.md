@@ -28,7 +28,7 @@ $ . .venv/bin/activate
 
 # Sample usage
 ```bash
-(.venv) $ python cluster.py --aggregate --input samples.csv
+(.venv) $ python cluster.py --input samples.csv
 Loading weights: 100%|█| 199/199 [00:00<00:00, 2131.93it/s, Materializing param
 cluster,query,runtime,runcount,users
 -1,"stats sum(bytes) as b by host,user",670,8,user13 user21 user3 user4
@@ -42,6 +42,7 @@ cluster,query,runtime,runcount,users
 (.venv) $
 ```
 
+Give the `--show-all-queries` parameter to have it print all queries, one per row, instead of just using one query as a sample.
+
 # TODO
 - Tuning: depends on query count, number of desired clusters
-  
