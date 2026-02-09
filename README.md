@@ -1,7 +1,12 @@
 # SPL Cluster
 
 This project clusters SPL queries by similarity. You should sanitize your queries first.
-You might want to sort your queries by popularity or cost first.
+
+Cluster sanitized_query into similarity groups.
+
+## Output fields
+- query_cluster_id (cluster identifier)
+- One cluster_centroid_query or representative_query [TODO]
 
 # Installation
 ```
@@ -54,7 +59,10 @@ Cluster 6:
 # TODO
 - Tuning: depends on query count, number of desired clusters
 - Input: Read queries from a CSV file instead of sample data inline
-- Output: Output all the clusters, but instead of all queries in each
-cluster, output a sample query for each cluster,
-and output the query ID (input row numbers) instead of the full query 
-for the rest
+- Output:
+-- ID (input row number) of all queries in cluster
+-- one representative query for each cluster
+-- sum of run times for each cluster
+-- sum of run counts for each cluster
+-- set of users for each cluster
+  
