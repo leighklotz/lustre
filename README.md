@@ -1,8 +1,6 @@
 # Query Cluster
 
-This project clusters queries by similarity. You should sanitize your queries first.
-
-Cluster sanitized_query into similarity groups.
+This project clusters sanitized queries into similarity groups and gives aggregate statistics and a sample query.
 
 ## Input `queries.csv` format:
 ```csv
@@ -13,11 +11,11 @@ query,count,runtime,users
 ```
 
 ## Output fields
-- query_cluster_id (cluster identifier)
-- One cluster centroid query as representative query 
-- Total run count
-- Total run time
-- List of Users
+- cluster_id
+- cluster centroid query (as representative query )
+- total run count
+- total run time
+- list of users
 
 # Installation
 ```
