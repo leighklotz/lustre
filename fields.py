@@ -84,31 +84,6 @@ def load_queries_from_csv(csv_file):
     return queries
 
 
-def main(spl_queries):
-    # build embedding matrix: (n_samples, hidden)
-    embeddings = np.vstack([get_embedding(q[0]) for q in spl_queries]).astype(np.float64)
-
-    # Dimensionality reduction (PCA)
-    pca = PCA(n_components=10, random_state=0)
-    reduced_embeddings = pca.fit_transform(embeddings)
-
-    # HDBSCAN expects a DISTANCE matrix when metric='precomputed'.
-    # You were passing a SIMILARITY matrix; convert to distance.
-    S = cosine_similarity(reduced_embeddings)          # similarity in [-1, 1]
-    D = 1.0 - S                                       # cosine distance in [0, 2]
-    np.fill_diagonal(D, 0.0)
-
-    clusterer = hdbscan.HDBSCAN(
-        metric="precomputed",
-        min_cluster_size=2,   # tiny dataset => smaller clusters allowed
-        min_samples=1,
-        cluster_selection_epsilon=0.0,
-    )
-
-    cluster_labels = clusterer.fit_predict(D)
-
-    print_clusters(zip(spl_queries, cluster_labels), sys.stdout)
-
 def print_clusters(query_label_pairs, out):
     csv_writer = csv.writer(out)
     csv_headers = [ 'cluster', 'query', 'runtime', 'runcount', 'users' ]
@@ -145,3 +120,29 @@ if __name__ == "__main__":
         spl_queries = SPL_QUERY_SAMPLES
 
     main(spl_queries)
+
+def main(spl_queries):
+    # build embedding matrix: (n_samples, hidden)
+    embeddings = np.vstack([get_embedding(q[0]) for q in spl_queries]).astype(np.float64)
+
+    # Dimensionality reduction (PCA)
+    pca = PCA(n_components=10, random_state=0)
+    reduced_embeddings = pca.fit_transform(embeddings)
+
+    # HDBSCAN expects a DISTANCE matrix when metric='precomputed'.
+    # You were passing a SIMILARITY matrix; convert to distance.
+    S = cosine_similarity(reduced_embeddings)          # similarity in [-1, 1]
+    D = 1.0 - S                                       # cosine distance in [0, 2]
+    np.fill_diagonal(D, 0.0)
+
+    clusterer = hdbscan.HDBSCAN(
+        metric="precomputed",
+        min_cluster_size=2,   # tiny dataset => smaller clusters allowed
+        min_samples=1,
+        cluster_selection_epsilon=0.0,
+    )
+
+    cluster_labels = clusterer.fit_predict(D)
+
+    print_clusters(zip(spl_queries, cluster_labels), sys.stdout)
+
