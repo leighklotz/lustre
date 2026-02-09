@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/usr/bin/env python3
 
 import argparse
 import csv
@@ -17,6 +17,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
 model = AutoModel.from_pretrained("microsoft/codebert-base")
 model.eval()
+
+## TODO: Make MIN_CLUSTER_SIZE a default and add a CLI parameter override
+
+# tiny dataset => smaller clusters allowed
+MIN_CLUSTER_SIZE=2
 
 # Optional: ensure you exported HF_TOKEN if you expect to use gated models.
 # CodeBERT itself is public, but Hugging Face will give you an "unauthenticated" warning
@@ -161,7 +166,7 @@ def print_clusters_sample_query(csv_writer, clusters, cluster_indices, reduced_e
         csv_writer.writerow([cluster_id, centroid_query[0], total_runtime, total_runcount, sorted_users])
 
 
-def main(spl_queries, show_all_queries=False):
+def main(spl_queries, show_all_queries=False, min_cluster_size=MIN_CLUSTER_SIZE):
     # build embedding matrix: (n_samples, hidden)
     embeddings = np.vstack([get_embedding(q[0]) for q in spl_queries]).astype(np.float64)
 
@@ -177,7 +182,7 @@ def main(spl_queries, show_all_queries=False):
 
     clusterer = hdbscan.HDBSCAN(
         metric="precomputed",
-        min_cluster_size=2,   # tiny dataset => smaller clusters allowed
+        min_cluster_size=min_cluster_size,
         min_samples=1,
         cluster_selection_epsilon=0.0,
     )
@@ -197,6 +202,8 @@ if __name__ == "__main__":
     parser.add_argument("--input", type=str, help="Path to the CSV file containing queries.")
     parser.add_argument("--show-all-queries", action="store_true",
                         help="Show all queries in cluster and do not aggregate metrics")
+    parser.add_argument("--min-cluster-size", type=int, default=MIN_CLUSTER_SIZE,
+                        help="Minimum cluster size for HDBSCAN (default: {})".format(MIN_CLUSTER_SIZE))
     args = parser.parse_args()
 
     if args.input:
@@ -204,4 +211,4 @@ if __name__ == "__main__":
     else:
         spl_queries = QUERY_SAMPLES
 
-    main(spl_queries, show_all_queries=args.show_all_queries)
+    main(spl_queries, show_all_queries=args.show_all_queries, min_cluster_size=args.min_cluster_size)

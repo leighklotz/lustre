@@ -44,5 +44,5 @@ cluster,query,runtime,runcount,users
 
 Give the `--show-all-queries` parameter to have it print all queries, one per row, instead of just using one query as a sample.
 
-# TODO
-- Tuning: depends on query count, number of desired clusters
+# Tuning
+- `--min-cluster-size` depends on the number of desired clusters depends and query corpus count
