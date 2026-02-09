@@ -28,35 +28,35 @@ def get_embedding(text: str) -> np.ndarray:
     emb = outputs.last_hidden_state.mean(dim=1).cpu().numpy()
     return emb[0]  # -> (hidden,)
 
-# Example usage (replace with your SPL queries)
-spl_queries = [
-    "index=web sourcetype=apache_error WARN",
-    "stats count by user",
-    "search index=main sourcetype=access_combined status=404",
-    "index=web sourcetype=apache_error INFO",
-    "stats count by user, host",
-    "search index=main sourcetype=access_combined status=400",
-    "stats count(user) by host",
-    "search index=main sourcetype=access_combined status=500",
-    "index=main sourcetype=syslog WARN",
-    "search index=web sourcetype=apache_access status=400",
-    "stats sum(bytes) as b by host, user",
-    "search index=web sourcetype=apache_access status=401",
-    "search index=web sourcetype=apache_access status=403",
-    "index=main sourcetype=syslog ERROR",
-    "search index=main sourcetype=access_combined status=401",
-    "stats count(host) by user",
-    "index=main sourcetype=syslog DEBUG",
-    "index=web sourcetype=apache_error ERROR",
-    "stats sum(bytes) by host",
-    "index=main sourcetype=syslog INFO",
-    "search index=web sourcetype=apache_access status=500",
-    "search index=web sourcetype=apache_access status=404",
-    "index=web sourcetype=apache_error DEBUG"
+# Example Usage (Replace With Your Spl Queries)
+SPL_QUERIES = [
+    ('index=web sourcetype=apache_error warn', 1434, 7, ['user1', 'user3']),
+    ('stats count by user', 100, 5, ['user2', 'user4']),
+    ('search index=main sourcetype=access_combined status=404', 500, 3, ['user1', 'user5']),
+    ('index=web sourcetype=apache_error info', 200, 2, ['user3', 'user6']),
+    ('stats count by user, host', 300, 4, ['user2', 'user7']),
+    ('search index=main sourcetype=access_combined status=400', 600, 6, ['user4', 'user8']),
+    ('stats count(user) by host', 150, 1, ['user5', 'user9']),
+    ('search index=main sourcetype=access_combined status=500', 400, 3, ['user1', 'user10']),
+    ('index=main sourcetype=syslog warn', 250, 5, ['user3', 'user11']),
+    ('search index=web sourcetype=apache_access status=400', 550, 7, ['user2', 'user12']),
+    ('stats sum(bytes) as b by host, user', 350, 2, ['user4', 'user13']),
+    ('search index=web sourcetype=apache_access status=401', 450, 4, ['user5', 'user14']),
+    ('search index=web sourcetype=apache_access status=403', 650, 6, ['user1', 'user15']),
+    ('index=main sourcetype=syslog error', 180, 1, ['user3', 'user16']),
+    ('search index=main sourcetype=access_combined status=401', 520, 3, ['user2', 'user17']),
+    ('stats count(host) by user', 220, 5, ['user4', 'user18']),
+    ('index=main sourcetype=syslog debug', 130, 2, ['user5', 'user19']),
+    ('index=web sourcetype=apache_error error', 270, 4, ['user1', 'user20']),
+    ('stats sum(bytes) by host', 320, 6, ['user3', 'user21']),
+    ('index=main sourcetype=syslog info', 170, 1, ['user2', 'user22']),
+    ('search index=web sourcetype=apache_access status=500', 570, 3, ['user4', 'user23']),
+    ('search index=web sourcetype=apache_access status=404', 620, 5, ['user5', 'user24']),
+    ('index=web sourcetype=apache_error debug', 230, 2, ['user1', 'user25'])
 ]
 
 # Build embedding matrix: (n_samples, hidden)
-embeddings = np.vstack([get_embedding(q) for q in spl_queries]).astype(np.float64)
+embeddings = np.vstack([get_embedding(q[0]) for q in SPL_QUERIES]).astype(np.float64)
 
 # Dimensionality reduction (PCA)
 pca = PCA(n_components=10, random_state=0)
@@ -77,9 +77,9 @@ clusterer = hdbscan.HDBSCAN(
 
 cluster_labels = clusterer.fit_predict(D)
 
-# TODO: Print the clusters in numerical order
+# Print the clusters in numerical order
 clusters = {}
-for query, label in zip(spl_queries, cluster_labels):
+for query, label in zip(SPL_QUERIES, cluster_labels):
     if label not in clusters:
         clusters[label] = []
     clusters[label].append(query)
@@ -90,4 +90,4 @@ sorted_cluster_keys = sorted(clusters.keys())
 for label in sorted_cluster_keys:
     print(f"Cluster {label}:")
     for query in clusters[label]:
-        print(f"- {query}")
+        print(f"- {query[0]}")
