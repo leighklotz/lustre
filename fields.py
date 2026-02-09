@@ -18,29 +18,30 @@ from sklearn.metrics.pairwise import cosine_similarity
 # assert os.getenv("HF_TOKEN", "") != ""
 
 SPL_QUERY_SAMPLES = [
-    ('index=web sourcetype=apache_error warn', 1434, 7, ['user1', 'user3']),
-    ('stats count by user', 100, 5, ['user2', 'user4']),
-    ('search index=main sourcetype=access_combined status=404', 500, 3, ['user1', 'user5']),
-    ('index=web sourcetype=apache_error info', 200, 2, ['user3', 'user6']),
-    ('stats count by user, host', 300, 4, ['user2', 'user7']),
-    ('search index=main sourcetype=access_combined status=400', 600, 6, ['user4', 'user8']),
-    ('stats count(user) by host', 150, 1, ['user5', 'user9']),
-    ('search index=main sourcetype=access_combined status=5001', 1, 33, ['AAA', 'BBB']),
-    ('index=main sourcetype=syslog warn', 250, 5, ['user3', 'user11']),
-    ('search index=web sourcetype=apache_access status=400', 550, 7, ['user2', 'user12']),
-    ('stats sum(bytes) as b by host, user', 350, 2, ['user4', 'user13']),
-    ('search index=web sourcetype=apache_access status=401', 450, 4, ['user5', 'user14']),
-    ('search index=web sourcetype=apache_access status=403', 650, 6, ['user1', 'user15']),
-    ('index=main sourcetype=syslog error', 180, 1, ['user3', 'user16']),
-    ('search index=main sourcetype=access_combined status=401', 520, 3, ['user2', 'user17']),
-    ('stats count(host) by user', 220, 5, ['user4', 'user18']),
-    ('index=main sourcetype=syslog debug', 130, 2, ['user5', 'user19']),
-    ('index=web sourcetype=apache_error error', 270, 4, ['user1', 'user20']),
-    ('stats sum(bytes) by host', 320, 6, ['user3', 'user21']),
-    ('index=main sourcetype=syslog info', 170, 1, ['user2', 'user22']),
-    ('search index=web sourcetype=apache_access status=500', 570, 3, ['user4', 'user23']),
-    ('search index=web sourcetype=apache_access status=404', 620, 5, ['user5', 'user24']),
-    ('index=web sourcetype=apache_error debug', 230, 2, ['user1', 'user25'])
+    # query,count,runtime,users
+    ('index=web sourcetype=apache_error warn', 1434, 7, 'user1 user3'),
+    ('stats count by user', 100, 5, 'user2 user4'),
+    ('search index=main sourcetype=access_combined status=404', 500, 3, 'user1 user5'),
+    ('index=web sourcetype=apache_error info', 200, 2, 'user3 user6'),
+    ('stats count by user, host', 300, 4, 'user2 user7'),
+    ('search index=main sourcetype=access_combined status=400', 600, 6, 'user4 user8'),
+    ('stats count(user) by host', 150, 1, 'user5 user9'),
+    ('search index=main sourcetype=access_combined status=5001', 1, 33, 'AAA BBB'),
+    ('index=main sourcetype=syslog warn', 250, 5, 'user3 user11'),
+    ('search index=web sourcetype=apache_access status=400', 550, 7, 'user2 user3 user12'),
+    ('stats sum(bytes) as b by host, user', 350, 2, 'user4 user13'),
+    ('search index=web sourcetype=apache_access status=401', 450, 4, 'user5 user14'),
+    ('search index=web sourcetype=apache_access status=403', 650, 6, 'user1 user4 user15'),
+    ('index=main sourcetype=syslog error', 180, 1, 'user3 user16'),
+    ('search index=main sourcetype=access_combined status=401', 520, 3, 'user2 user17'),
+    ('stats count(host) by user', 220, 5, 'user4 user18'),
+    ('index=main sourcetype=syslog debug', 130, 2, 'user5 user19 user11'),
+    ('index=web sourcetype=apache_error error', 270, 4, 'user1 user20'),
+    ('stats sum(bytes) by host', 320, 6, 'user3 user21'),
+    ('index=main sourcetype=syslog info', 170, 1, 'user2 user22'),
+    ('search index=web sourcetype=apache_access status=500', 570, 3, 'user4 user23'),
+    ('search index=web sourcetype=apache_access status=404', 620, 5, 'user5 user24'),
+    ('index=web sourcetype=apache_error debug', 230, 2, 'user1 user25')
 ]
 
 # Load CodeBERT
@@ -62,12 +63,12 @@ def load_queries_from_csv(csv_file):
     Loads queries from a CSV file.
 
     The CSV file should have the following format:
-    query,count,num_users,users
+    query,count,runtime,users
     where:
         query is the SPL query string.
-        count is a numerical value (not used in clustering, but kept for consistency of original dataset).
-        num_users is a numerical value (not used in clustering, but kept for consistency of original dataset).
-        users is a string representing a list of users (not used in clustering).
+        count number of times query is run
+        runtime is the runtime of the query (across all times run)
+        users is a string representing a list of users
 
     Args:
         csv_file (str): Path to the CSV file.
@@ -78,31 +79,12 @@ def load_queries_from_csv(csv_file):
     queries = []
     with open(csv_file, 'r') as f:
         reader = csv.reader(f)
-        next(reader)  # Skip the header row
+        header = next(reader)  # Skip the header row
+        assert header == ['query', 'count', 'runtime', 'users']
         for row in reader:
-            query, count, num_users, users = row
-            queries.append((query, int(count), int(num_users), users))
+            query, count, runtime, users = row
+            queries.append((query, int(count), int(runtime), users))
     return queries
-
-
-def normalize_users(users_data):
-    """
-    Normalize users data to space-separated string format.
-    
-    Args:
-        users_data: Either a list of users or a comma-separated string
-    
-    Returns:
-        str: Space-separated string of users
-    """
-    if isinstance(users_data, list):
-        return ' '.join(users_data)
-    elif isinstance(users_data, str):
-        # Convert comma-separated to space-separated
-        if ',' in users_data:
-            return ' '.join(u.strip() for u in users_data.split(',') if u.strip())
-        return users_data
-    return str(users_data)
 
 
 def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=None):
@@ -152,9 +134,7 @@ def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=N
             all_users = set()
             for q in cluster_queries:
                 users_data = q[3]
-                # Use normalize_users helper to handle different formats
-                normalized = normalize_users(users_data)
-                all_users.update(normalized.split())
+                all_users.update(users_data.split())
             
             # Sort users for consistent output
             sorted_users = ' '.join(sorted(all_users))
@@ -166,8 +146,6 @@ def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=N
         for cluster_id in sorted_cluster_keys:
             for cluster in clusters[cluster_id]:
                 (query, runtime, runcount, users) = cluster
-                # Normalize users to space-separated format
-                users = normalize_users(users)
                 csv_writer.writerow([ cluster_id, query, runtime, runcount, users ])
 
 def main(spl_queries, aggregate=False):
@@ -213,4 +191,3 @@ if __name__ == "__main__":
         spl_queries = SPL_QUERY_SAMPLES
 
     main(spl_queries, aggregate=args.aggregate)
-
