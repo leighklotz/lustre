@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import numpy as np
 import hdbscan
 import torch
+import csv
 
 from transformers import AutoTokenizer, AutoModel
 from sklearn.decomposition import PCA
@@ -14,22 +16,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 # on download.
 # assert os.getenv("HF_TOKEN", "") != ""
 
-# Load CodeBERT
-tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
-model = AutoModel.from_pretrained("microsoft/codebert-base")
-model.eval()
-
-def get_embedding(text: str) -> np.ndarray:
-    """Return a single (hidden_size,) embedding vector for `text`."""
-    inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True)
-    with torch.no_grad():
-        outputs = model(**inputs)
-    # Mean pooling over sequence length -> (1, hidden)
-    emb = outputs.last_hidden_state.mean(dim=1).cpu().numpy()
-    return emb[0]  # -> (hidden,)
-
-# Example Usage (Replace With Your Spl Queries)
-SPL_QUERIES = [
+SPL_QUERY_SAMPLES = [
     ('index=web sourcetype=apache_error warn', 1434, 7, ['user1', 'user3']),
     ('stats count by user', 100, 5, ['user2', 'user4']),
     ('search index=main sourcetype=access_combined status=404', 500, 3, ['user1', 'user5']),
@@ -55,39 +42,106 @@ SPL_QUERIES = [
     ('index=web sourcetype=apache_error debug', 230, 2, ['user1', 'user25'])
 ]
 
-# Build embedding matrix: (n_samples, hidden)
-embeddings = np.vstack([get_embedding(q[0]) for q in SPL_QUERIES]).astype(np.float64)
+# Load CodeBERT
+tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
+model = AutoModel.from_pretrained("microsoft/codebert-base")
+model.eval()
 
-# Dimensionality reduction (PCA)
-pca = PCA(n_components=10, random_state=0)
-reduced_embeddings = pca.fit_transform(embeddings)
+def get_embedding(text: str) -> np.ndarray:
+    """Return a single (hidden_size,) embedding vector for `text`."""
+    inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True)
+    with torch.no_grad():
+        outputs = model(**inputs)
+    # Mean pooling over sequence length -> (1, hidden)
+    emb = outputs.last_hidden_state.mean(dim=1).cpu().numpy()
+    return emb[0]  # -> (hidden,)
 
-# HDBSCAN expects a DISTANCE matrix when metric='precomputed'.
-# You were passing a SIMILARITY matrix; convert to distance.
-S = cosine_similarity(reduced_embeddings)          # similarity in [-1, 1]
-D = 1.0 - S                                       # cosine distance in [0, 2]
-np.fill_diagonal(D, 0.0)
+def load_queries_from_csv(csv_file):
+    """
+    Loads queries from a CSV file.
 
-clusterer = hdbscan.HDBSCAN(
-    metric="precomputed",
-    min_cluster_size=2,   # tiny dataset => smaller clusters allowed
-    min_samples=1,
-    cluster_selection_epsilon=0.0,
-)
+    The CSV file should have the following format:
+    query,count,num_users,users
+    where:
+        query is the SPL query string.
+        count is a numerical value (not used in clustering, but kept for consistency of original dataset).
+        num_users is a numerical value (not used in clustering, but kept for consistency of original dataset).
+        users is a string representing a list of users (not used in clustering).
 
-cluster_labels = clusterer.fit_predict(D)
+    Args:
+        csv_file (str): Path to the CSV file.
 
-# Print the clusters in numerical order
-clusters = {}
-for query, label in zip(SPL_QUERIES, cluster_labels):
-    if label not in clusters:
-        clusters[label] = []
-    clusters[label].append(query)
+    Returns:
+        list: A list of tuples, where each tuple contains the query string, count, number of users, and list of users.
+    """
+    queries = []
+    with open(csv_file, 'r') as f:
+        reader = csv.reader(f)
+        next(reader)  # Skip the header row
+        for row in reader:
+            query, count, num_users, users = row
+            queries.append((query, int(count), int(num_users), users))
+    return queries
 
-# Sort cluster keys to print in numerical order
-sorted_cluster_keys = sorted(clusters.keys())
 
-for label in sorted_cluster_keys:
-    print(f"Cluster {label}:")
-    for query in clusters[label]:
-        print(f"- {query[0]}")
+def main(spl_queries):
+    # build embedding matrix: (n_samples, hidden)
+    embeddings = np.vstack([get_embedding(q[0]) for q in spl_queries]).astype(np.float64)
+
+    # Dimensionality reduction (PCA)
+    pca = PCA(n_components=10, random_state=0)
+    reduced_embeddings = pca.fit_transform(embeddings)
+
+    # HDBSCAN expects a DISTANCE matrix when metric='precomputed'.
+    # You were passing a SIMILARITY matrix; convert to distance.
+    S = cosine_similarity(reduced_embeddings)          # similarity in [-1, 1]
+    D = 1.0 - S                                       # cosine distance in [0, 2]
+    np.fill_diagonal(D, 0.0)
+
+    clusterer = hdbscan.HDBSCAN(
+        metric="precomputed",
+        min_cluster_size=2,   # tiny dataset => smaller clusters allowed
+        min_samples=1,
+        cluster_selection_epsilon=0.0,
+    )
+
+    cluster_labels = clusterer.fit_predict(D)
+
+    print_clusters(zip(spl_queries, cluster_labels), sys.stdout)
+
+def print_clusters(query_label_pairs, out):
+    csv_writer = csv.writer(out)
+    csv_headers = [ 'cluster', 'query', 'runtime', 'runcount', 'users' ]
+    csv_writer.writerow(csv_headers) 
+
+    # Get the clusters in numerical order
+    clusters = {}
+    for query, label in query_label_pairs:
+        if label not in clusters:
+            clusters[label] = []
+        clusters[label].append(query)
+
+    # Sort cluster keys to print in numerical order
+    sorted_cluster_keys = sorted(clusters.keys())
+
+
+    for cluster_id in sorted_cluster_keys:
+        for cluster in clusters[label]:
+            (query, runtime, runcount, users) = cluster
+            users = ' '.join(users)
+            csv_writer.writerow([ cluster_id, query, runtime, runcount, users ])
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Cluster SPL queries using CodeBERT and HDBSCAN.")
+    parser.add_argument("--input", type=str, help="Path to the CSV file containing SPL queries.")
+    args = parser.parse_args()
+    
+    if args.input:
+        spl_queries = load_queries_from_csv(args.input)
+    else:
+        # Example Usage (Replace With Your Spl Queries)
+        spl_queries = SPL_QUERY_SAMPLES
+
+    main(spl_queries)

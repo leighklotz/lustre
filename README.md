@@ -58,7 +58,6 @@ Cluster 6:
 
 # TODO
 - Tuning: depends on query count, number of desired clusters
-- Input: Read queries from a CSV file instead of sample data inline
 - Output:
 -- ID (input row number) of all queries in cluster
 -- one representative query for each cluster
@@ -66,3 +65,16 @@ Cluster 6:
 -- sum of run counts for each cluster
 -- set of users for each cluster
   
+# How to run the code:
+
+## `queries.csv` format:
+```csv
+query,count,num_users,users
+"index=web sourcetype=apache_error warn",1434,7,"user1,user3"
+"stats count by user",100,5,"user2,user4"
+"search index=main sourcetype=access_combined status=404",500,3,"user1,user5"
+```
+
+## run
+```bash
+python cluster_spl.py --input queries.csv
