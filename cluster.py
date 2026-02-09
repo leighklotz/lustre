@@ -89,20 +89,27 @@ def load_queries_from_csv(csv_file):
     return queries
 
 
-def print_clusters(query_label_pairs, out, show_all_queries, reduced_embeddings):
-    csv_writer = csv.writer(out)
-    csv_headers = [ 'cluster', 'query', 'runtime', 'runcount', 'users' ]
-    csv_writer.writerow(csv_headers)
-
-    # Get the clusters in numerical order
+# Get the clusters in numerical order: clusters
+# Track original indices for embeddings: cluster_indices
+def get_clusters(query_label_pairs):
     clusters = {}
-    cluster_indices = {}  # Track original indices for embeddings
+    cluster_indices = {}
     for idx, (query, label) in enumerate(query_label_pairs):
         if label not in clusters:
             clusters[label] = []
             cluster_indices[label] = []
         clusters[label].append(query)
         cluster_indices[label].append(idx)
+
+    return clusters, cluster_indices
+
+
+def print_clusters(query_label_pairs, out, show_all_queries, reduced_embeddings):
+    csv_writer = csv.writer(out)
+    csv_headers = [ 'cluster', 'query', 'runtime', 'runcount', 'users' ]
+    csv_writer.writerow(csv_headers)
+
+    clusters, cluster_indices = get_clusters(query_label_pairs)
 
     if not show_all_queries:
         print_clusters_sample_query(csv_writer, clusters, cluster_indices, reduced_embeddings)
