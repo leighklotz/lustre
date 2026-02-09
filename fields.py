@@ -6,6 +6,7 @@ import numpy as np
 import hdbscan
 import torch
 import csv
+import warnings
 
 from transformers import AutoTokenizer, AutoModel
 from sklearn.decomposition import PCA
@@ -84,6 +85,26 @@ def load_queries_from_csv(csv_file):
     return queries
 
 
+def normalize_users(users_data):
+    """
+    Normalize users data to space-separated string format.
+    
+    Args:
+        users_data: Either a list of users or a comma-separated string
+    
+    Returns:
+        str: Space-separated string of users
+    """
+    if isinstance(users_data, list):
+        return ' '.join(users_data)
+    elif isinstance(users_data, str):
+        # Convert comma-separated to space-separated
+        if ',' in users_data:
+            return ' '.join(u.strip() for u in users_data.split(',') if u.strip())
+        return users_data
+    return str(users_data)
+
+
 def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=None):
     csv_writer = csv.writer(out)
     csv_headers = [ 'cluster', 'query', 'runtime', 'runcount', 'users' ]
@@ -104,7 +125,6 @@ def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=N
 
     if aggregate and reduced_embeddings is None:
         # Warn if aggregate is requested but embeddings are not available
-        import warnings
         warnings.warn("Aggregate mode requested but reduced_embeddings not provided. Falling back to default mode.", UserWarning)
 
     if aggregate and reduced_embeddings is not None:
@@ -148,13 +168,8 @@ def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=N
         for cluster_id in sorted_cluster_keys:
             for cluster in clusters[cluster_id]:
                 (query, runtime, runcount, users) = cluster
-                # Handle both list and string formats for users
-                if isinstance(users, list):
-                    users = ' '.join(users)
-                elif isinstance(users, str):
-                    # Convert comma-separated to space-separated for consistency
-                    if ',' in users:
-                        users = ' '.join(u.strip() for u in users.split(',') if u.strip())
+                # Normalize users to space-separated format
+                users = normalize_users(users)
                 csv_writer.writerow([ cluster_id, query, runtime, runcount, users ])
 
 def main(spl_queries, aggregate=False):
