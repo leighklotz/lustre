@@ -100,7 +100,7 @@ def print_clusters(query_label_pairs, out):
     sorted_cluster_keys = sorted(clusters.keys())
 
     for cluster_id in sorted_cluster_keys:
-        for cluster in clusters[label]:
+        for cluster in clusters[cluster_id]:
             (query, runtime, runcount, users) = cluster
             users = ' '.join(users)
             csv_writer.writerow([ cluster_id, query, runtime, runcount, users ])
