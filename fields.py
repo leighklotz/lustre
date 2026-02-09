@@ -102,6 +102,11 @@ def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=N
     # Sort cluster keys to print in numerical order
     sorted_cluster_keys = sorted(clusters.keys())
 
+    if aggregate and reduced_embeddings is None:
+        # Warn if aggregate is requested but embeddings are not available
+        import warnings
+        warnings.warn("Aggregate mode requested but reduced_embeddings not provided. Falling back to default mode.", UserWarning)
+
     if aggregate and reduced_embeddings is not None:
         # Aggregate mode: one line per cluster
         for cluster_id in sorted_cluster_keys:
@@ -143,7 +148,13 @@ def print_clusters(query_label_pairs, out, aggregate=False, reduced_embeddings=N
         for cluster_id in sorted_cluster_keys:
             for cluster in clusters[cluster_id]:
                 (query, runtime, runcount, users) = cluster
-                users = ' '.join(users)
+                # Handle both list and string formats for users
+                if isinstance(users, list):
+                    users = ' '.join(users)
+                elif isinstance(users, str):
+                    # Convert comma-separated to space-separated for consistency
+                    if ',' in users:
+                        users = ' '.join(u.strip() for u in users.split(',') if u.strip())
                 csv_writer.writerow([ cluster_id, query, runtime, runcount, users ])
 
 def main(spl_queries, aggregate=False):
