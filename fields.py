@@ -24,7 +24,7 @@ SPL_QUERY_SAMPLES = [
     ('stats count by user, host', 300, 4, ['user2', 'user7']),
     ('search index=main sourcetype=access_combined status=400', 600, 6, ['user4', 'user8']),
     ('stats count(user) by host', 150, 1, ['user5', 'user9']),
-    ('search index=main sourcetype=access_combined status=500', 400, 3, ['user1', 'user10']),
+    ('search index=main sourcetype=access_combined status=5001', 1, 33, ['AAA', 'BBB']),
     ('index=main sourcetype=syslog warn', 250, 5, ['user3', 'user11']),
     ('search index=web sourcetype=apache_access status=400', 550, 7, ['user2', 'user12']),
     ('stats sum(bytes) as b by host, user', 350, 2, ['user4', 'user13']),
@@ -99,27 +99,11 @@ def print_clusters(query_label_pairs, out):
     # Sort cluster keys to print in numerical order
     sorted_cluster_keys = sorted(clusters.keys())
 
-
     for cluster_id in sorted_cluster_keys:
         for cluster in clusters[label]:
             (query, runtime, runcount, users) = cluster
             users = ' '.join(users)
             csv_writer.writerow([ cluster_id, query, runtime, runcount, users ])
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Cluster SPL queries using CodeBERT and HDBSCAN.")
-    parser.add_argument("--input", type=str, help="Path to the CSV file containing SPL queries.")
-    args = parser.parse_args()
-    
-    if args.input:
-        spl_queries = load_queries_from_csv(args.input)
-    else:
-        # Example Usage (Replace With Your Spl Queries)
-        spl_queries = SPL_QUERY_SAMPLES
-
-    main(spl_queries)
 
 def main(spl_queries):
     # build embedding matrix: (n_samples, hidden)
@@ -145,4 +129,20 @@ def main(spl_queries):
     cluster_labels = clusterer.fit_predict(D)
 
     print_clusters(zip(spl_queries, cluster_labels), sys.stdout)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Cluster SPL queries using CodeBERT and HDBSCAN.")
+    parser.add_argument("--input", type=str, help="Path to the CSV file containing SPL queries.")
+    args = parser.parse_args()
+    
+    if args.input:
+        spl_queries = load_queries_from_csv(args.input)
+    else:
+        # Example Usage (Replace With Your Spl Queries)
+        spl_queries = SPL_QUERY_SAMPLES
+
+    main(spl_queries)
 
