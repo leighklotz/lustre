@@ -46,3 +46,7 @@ Give the `--show-all-queries` parameter to have it print all queries, one per ro
 
 # Tuning
 - `--min-cluster-size` depends on the number of desired clusters depends and query corpus count
+
+# Provenance
+- https://docs.google.com/document/d/1P-r0vkVVEiCkKaIO6s2TkrO2h5Q6T5K0cxz0uMm5LM8/edit?tab=t.0
+- https://chatgpt.com/share/698b6e90-06f8-800c-824c-9cabc3b926a2
