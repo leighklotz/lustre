@@ -1,6 +1,6 @@
 # Query Cluster
 
-This project clusters sanitized queries into similarity groups and gives aggregate statistics and a sample query.
+This project clusters sanitized queries into similarity groups and gives aggregate statistics and one or more sample queries.
 
 # Quick Start
 ```bash
