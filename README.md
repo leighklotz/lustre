@@ -2,8 +2,13 @@
 
 This project clusters sanitized queries into similarity groups and gives aggregate statistics and one or more sample queries.
 
-# Quick Start
+# Installation and Quick Start
 ```bash
+$ python --version
+Python 3.12.3
+$ python3 -m venv .venv
+$ . .venv/bin/activate
+(.venv) $ pip install -r requirements.txt 
 $ . .venv/bin/activate
 (.venv) $ python cluster.py --input example-input-queries.csv --output-summary output/summary.csv --output-samples output/cluster-samples.csv
 ```
@@ -35,15 +40,6 @@ query,count,runtime,users
 - `query`
 
 (`sample_type` is one of `median` | `edge` | `centroid`)
-
-# Installation
-```
-$ python --version
-Python 3.12.3
-$ python3 -m venv .venv
-$ . .venv/bin/activate
-(.venv) $ pip install -r requirements.txt 
-```
 
 # Sample usage
 ```bash
