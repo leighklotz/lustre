@@ -2,6 +2,12 @@
 
 This project clusters sanitized queries into similarity groups and gives aggregate statistics and a sample query.
 
+# Quick Start
+```bash
+$ . .venv/bin/activate
+(.venv) $ python cluster.py --input example-input-queries.csv --output-summary output/summary.csv --output-samples output/cluster-samples.csv
+```
+
 ## Input `queries.csv` format:
 ```csv
 query,count,runtime,users
