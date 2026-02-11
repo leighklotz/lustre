@@ -46,9 +46,10 @@ $ . .venv/bin/activate
 (.venv) $ python cluster.py --input example-input-queries.csv --output-summary output/summary.csv --output-samples output/cluster-samples.csv
 ```
 
-Output files:
-```bash
-(.venv) $ cat summary.csv 
+## Cluster Summary Output
+These are the clusters. There is one sample query per cluster.
+
+```csv
 cluster,cluster_size,centroid_query,cluster_total_runtime,cluster_total_runcount,cluster_all_users
 -1,2,"stats sum(bytes) as b by host,user",670,8,user13 user21 user3 user4
 0,4,index=web sourcetype=apache_error error,2134,15,user1 user20 user25 user3 user6
@@ -68,7 +69,16 @@ cluster,cluster_size,centroid_query,cluster_total_runtime,cluster_total_runcount
 4,3,search index=web sourcetype=apache_access status=400,1570,14,user12 user14 user2 user23 user4 user5
 5,2,"stats count by user, host",400,9,user2 user4 user7
 6,2,stats count(user) by host,370,6,user18 user4 user5 user9
-(.venv) klotz@tensor:~/wip/lustre$ cat cluster-samples.csv 
+```
+
+## Cluster Samples Output
+When specify `--output-samples <filepath>` to output sample queries to
+a separate file, you can inspect the queries extracted
+to each cluster more closely.
+
+Below are the selected queries from each cluster. There are three sample queries per cluster.
+
+```csv
 cluster,cluster_size,sample_type,distance_from_centroid,query
 -1,2,centroid,1.4513,"stats sum(bytes) as b by host,user"
 -1,2,edge,1.4513,stats sum(bytes) by host
@@ -93,12 +103,9 @@ cluster,cluster_size,sample_type,distance_from_centroid,query
 (.venv) $ 
 ```
 
-You can also specify `--output-samples <filepath>` to output sample queries to
-a separate file. This will allow you to inspect the queries extracted
-to each cluster more closely.
-
-# Tuning
-- `--min-cluster-size` depends on the number of desired clusters depends and query corpus count
+# Cluster Tuning Parameters
+- `--min-cluster-size` is the minimum number of queries per cluster depends on the number of desired clusters depends and query corpus count
+- `--num-samples` is not actually tuning but output confirmation: Number of sample queries to show per cluster (default: 3)
 
 # Provenance
 - https://docs.google.com/document/d/1P-r0vkVVEiCkKaIO6s2TkrO2h5Q6T5K0cxz0uMm5LM8/edit?tab=t.0
