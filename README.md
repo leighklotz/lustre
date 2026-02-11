@@ -5,7 +5,7 @@ This project clusters sanitized queries into similarity groups and gives aggrega
 # Installation and Quick Start
 ```bash
 $ git clone https://github.com/leighklotz/lustre/
-$ cd lustte
+$ cd lustre
 $ python --version
 Python 3.12.3
 $ python3 -m venv .venv
