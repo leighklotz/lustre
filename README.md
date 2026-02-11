@@ -6,6 +6,7 @@ This project clusters sanitized queries into similarity groups and gives aggrega
 ```bash
 $ git clone https://github.com/leighklotz/lustre/
 $ cd lustre
+$ mkdir output
 $ python --version
 Python 3.12.3
 $ python3 -m venv .venv
