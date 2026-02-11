@@ -14,11 +14,13 @@ $ . .venv/bin/activate
 ```
 
 ## Input `queries.csv` format:
+Users is space-separated.
+
 ```csv
 query,count,runtime,users
-"index=web sourcetype=apache_error warn",1434,7,"user1,user3"
-"stats count by user",100,5,"user2,user4"
-"search index=main sourcetype=access_combined status=404",500,3,"user1,user5"
+"index=web sourcetype=apache_error warn",1434,7,"user1 user3"
+"stats count by user",100,5,"user2 user4"
+"search index=main sourcetype=access_combined status=404",500,3,"user1 user5"
 ```
 
 ## Summary File Output fields
@@ -63,7 +65,6 @@ When you specify `--output-samples <filepath>` it outputs some sample
 queries from each cluster to a separate file, so you can inspect the
 queries extracted to each cluster more closely.
 
-
 ```csv
 cluster,cluster_size,sample_type,distance_from_centroid,query
 -1,2,centroid,1.4513,"stats sum(bytes) as b by host,user"
@@ -86,7 +87,6 @@ cluster,cluster_size,sample_type,distance_from_centroid,query
 5,2,edge,1.4877,stats count by user
 6,2,centroid,0.3422,stats count(user) by host
 6,2,edge,0.3422,stats count(host) by user
-(.venv) $ 
 ```
 
 # Cluster Tuning Parameters

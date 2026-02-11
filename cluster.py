@@ -47,14 +47,14 @@ def load_queries_from_csv(csv_file):
         query is the query string.
         runtime is the runtime of the query (across all times run)
         count number of times query is run
-        users is a string representing a list of users
+        users is a string representing a space-separated list of users
 
     Args:
         csv_file (str): Path to the CSV file.
 
     Returns:
         list: A list of tuples, where each tuple contains the query string
-        count, number of users, and list of users.
+        count, number of users, and space-separated list of users.
     """
     queries = []
     with open(csv_file, 'r') as f:
@@ -86,7 +86,7 @@ def get_sample_queries(cluster_embeddings, cluster_queries, num_samples=3):
     """
     Select representative queries from a cluster.
     Returns: list of (query_tuple, role, distance) tuples where:
-        - query_tuple is (query, runtime, runcount, users)
+        - query_tuple is (query, runtime, runcount, users) and users is a space-separated string
         - role is 'centroid', 'edge', 'median', or 'diverse'
         - distance is the distance from the centroid
     """
@@ -199,7 +199,7 @@ def print_clusters_two_files(clusters, cluster_indices, reduced_embeddings,
         all_users = set()
         for q in cluster_queries:
             users_data = q[3]
-            all_users.update(users_data.split())
+            all_users.update(users_data.split()) # space-separated
 
         # Sort users for consistent output
         sorted_users = ' '.join(sorted(all_users))
