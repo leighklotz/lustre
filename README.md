@@ -41,13 +41,6 @@ query,count,runtime,users
 
 (`sample_type` is one of `median` | `edge` | `centroid`)
 
-# Sample usage
-```bash
-$ . .venv/bin/activate
-(.venv) $ mkdir output
-(.venv) $ python cluster.py --input example-input-queries.csv --output-summary output/summary.csv --output-samples output/cluster-samples.csv
-```
-
 ## Cluster Summary Output
 These are the clusters. There is one sample query per cluster.
 
