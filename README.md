@@ -12,7 +12,6 @@ Python 3.12.3
 $ python3 -m venv .venv
 $ . .venv/bin/activate
 (.venv) $ pip install -r requirements.txt 
-$ . .venv/bin/activate
 (.venv) $ python cluster.py --input example-input-queries.csv --output-summary output/summary.csv --output-samples output/cluster-samples.csv
 ```
 
