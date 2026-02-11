@@ -72,11 +72,12 @@ cluster,cluster_size,centroid_query,cluster_total_runtime,cluster_total_runcount
 ```
 
 ## Cluster Samples Output
-When specify `--output-samples <filepath>` to output sample queries to
-a separate file, you can inspect the queries extracted
-to each cluster more closely.
-
 Below are the selected queries from each cluster. There are three sample queries per cluster.
+
+When you specify `--output-samples <filepath>` it outputs some sample
+queries from each cluster to a separate file, so you can inspect the
+queries extracted to each cluster more closely.
+
 
 ```csv
 cluster,cluster_size,sample_type,distance_from_centroid,query
