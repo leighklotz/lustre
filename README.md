@@ -39,7 +39,7 @@ query,count,runtime,users
 - `distance_from_centroid`
 - `query`
 
-(`sample_type` is one of `median` | `edge` | `centroid`)
+(`sample_type` is one of `median` | `edge` | `centroid` | `diverse`)
 
 ## Cluster Summary Output
 These are the clusters. There is one sample query per cluster.
