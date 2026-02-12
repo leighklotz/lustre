@@ -16,6 +16,13 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
+# Optional UMAP support
+try:
+    import umap
+    UMAP_AVAILABLE = True
+except ImportError:
+    UMAP_AVAILABLE = False
+
 # Load CodeBERT
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
 model = AutoModel.from_pretrained("microsoft/codebert-base")
@@ -256,9 +263,7 @@ def visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_ind
                       learning_rate=learning_rate, max_iter=max_iter, 
                       random_state=random_state)
     elif method == 'umap':
-        try:
-            import umap
-        except ImportError:
+        if not UMAP_AVAILABLE:
             print("Error: umap-learn package not installed. Please install with: pip install umap-learn")
             return
         
@@ -376,29 +381,30 @@ def main(spl_queries, summary_output=None, samples_output=None,
 
     cluster_labels = clusterer.fit_predict(D)
 
-    # Get clusters for visualization
-    clusters, cluster_indices = get_clusters(zip(spl_queries, cluster_labels))
-    
     # Generate visualizations if requested
-    if visualize_tsne:
-        tsne_params = {
-            'perplexity': tsne_perplexity,
-            'learning_rate': tsne_learning_rate,
-            'max_iter': tsne_max_iter,
-            'random_state': 42
-        }
-        visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_indices,
-                         visualize_tsne, method='tsne', **tsne_params)
-    
-    if visualize_umap:
-        umap_params = {
-            'n_neighbors': umap_n_neighbors,
-            'min_dist': umap_min_dist,
-            'metric': umap_metric,
-            'random_state': 42
-        }
-        visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_indices,
-                         visualize_umap, method='umap', **umap_params)
+    if visualize_tsne or visualize_umap:
+        # Get clusters for visualization
+        clusters, cluster_indices = get_clusters(zip(spl_queries, cluster_labels))
+        
+        if visualize_tsne:
+            tsne_params = {
+                'perplexity': tsne_perplexity,
+                'learning_rate': tsne_learning_rate,
+                'max_iter': tsne_max_iter,
+                'random_state': 42
+            }
+            visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_indices,
+                             visualize_tsne, method='tsne', **tsne_params)
+        
+        if visualize_umap:
+            umap_params = {
+                'n_neighbors': umap_n_neighbors,
+                'min_dist': umap_min_dist,
+                'metric': umap_metric,
+                'random_state': 42
+            }
+            visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_indices,
+                             visualize_umap, method='umap', **umap_params)
 
     # Handle output files
     if show_all_queries:
