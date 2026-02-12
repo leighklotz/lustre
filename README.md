@@ -16,7 +16,7 @@ $ . .venv/bin/activate
 (.venv) $ pip install -r requirements.txt 
 ```
 
-Below is a simple run. For a more complex run, see [examples](examples).
+Below is a simple run. For a more complex run, see [example](example).
 
 ```bash
 (.venv) $ python cluster.py --input example-input-queries.csv --output-summary output/summary.csv --output-samples output/cluster-samples.csv
