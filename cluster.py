@@ -237,7 +237,7 @@ def print_clusters_two_files(clusters, cluster_indices, reduced_embeddings,
                 ])
 
 
-def visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_indices, 
+def visualize_clusters(reduced_embeddings, cluster_labels, _clusters, cluster_indices, 
                        output_path, method='tsne', **method_params):
     """
     Visualize clusters using dimensionality reduction (t-SNE or UMAP).
@@ -245,7 +245,7 @@ def visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_ind
     Args:
         reduced_embeddings: The PCA-reduced embeddings (from main function)
         cluster_labels: Array of cluster labels for each query
-        clusters: Dict mapping cluster_id -> list of query tuples
+        _clusters: Dict mapping cluster_id -> list of query tuples (unused, kept for API consistency)
         cluster_indices: Dict mapping cluster_id -> list of original indices
         output_path: Path to save the visualization
         method: 'tsne' or 'umap'
@@ -257,11 +257,10 @@ def visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_ind
         perplexity = method_params.get('perplexity', 30)
         learning_rate = method_params.get('learning_rate', 200)
         max_iter = method_params.get('max_iter', 1000)
-        random_state = method_params.get('random_state', 42)
         
         reducer = TSNE(n_components=2, perplexity=perplexity, 
                       learning_rate=learning_rate, max_iter=max_iter, 
-                      random_state=random_state)
+                      random_state=42)
     elif method == 'umap':
         if not UMAP_AVAILABLE:
             print("Error: umap-learn package not installed. Please install with: pip install umap-learn")
@@ -271,11 +270,10 @@ def visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_ind
         n_neighbors = method_params.get('n_neighbors', 15)
         min_dist = method_params.get('min_dist', 0.1)
         metric = method_params.get('metric', 'euclidean')
-        random_state = method_params.get('random_state', 42)
         
         reducer = umap.UMAP(n_components=2, n_neighbors=n_neighbors,
                            min_dist=min_dist, metric=metric,
-                           random_state=random_state)
+                           random_state=42)
     else:
         raise ValueError(f"Unknown visualization method: {method}")
     
@@ -288,9 +286,16 @@ def visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_ind
     # Get unique cluster labels and sort them
     unique_labels = sorted(set(cluster_labels))
     
-    # Create a colormap - use a colorblind-friendly palette
-    colors = plt.cm.tab10(np.linspace(0, 1, len(unique_labels)))
-    color_map = {label: colors[i] for i, label in enumerate(unique_labels)}
+    # Create a colormap - use a colorblind-friendly palette with enough colors
+    # Use tab20 for up to 20 clusters, otherwise use hsv for more colors
+    if len(unique_labels) <= 10:
+        colors = plt.cm.tab10(np.linspace(0, 1, 10))
+    elif len(unique_labels) <= 20:
+        colors = plt.cm.tab20(np.linspace(0, 1, 20))
+    else:
+        colors = plt.cm.hsv(np.linspace(0, 1, len(unique_labels)))
+    
+    color_map = {label: colors[i % len(colors)] for i, label in enumerate(unique_labels)}
     
     # Plot each cluster
     for label in unique_labels:
@@ -390,8 +395,7 @@ def main(spl_queries, summary_output=None, samples_output=None,
             tsne_params = {
                 'perplexity': tsne_perplexity,
                 'learning_rate': tsne_learning_rate,
-                'max_iter': tsne_max_iter,
-                'random_state': 42
+                'max_iter': tsne_max_iter
             }
             visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_indices,
                              visualize_tsne, method='tsne', **tsne_params)
@@ -400,8 +404,7 @@ def main(spl_queries, summary_output=None, samples_output=None,
             umap_params = {
                 'n_neighbors': umap_n_neighbors,
                 'min_dist': umap_min_dist,
-                'metric': umap_metric,
-                'random_state': 42
+                'metric': umap_metric
             }
             visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_indices,
                              visualize_umap, method='umap', **umap_params)
