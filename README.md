@@ -3,6 +3,8 @@
 This project clusters sanitized queries into similarity groups and gives aggregate statistics and one or more sample queries.
 
 # Installation and Quick Start
+First, choose either `requirements.txt` or `requirements-gpu.txt`.
+
 ```bash
 $ git clone https://github.com/leighklotz/lustre/
 $ cd lustre
@@ -203,6 +205,87 @@ python cluster.py --input queries.csv \
 2. **Adjust incrementally**: Change one parameter at a time to see its effect
 3. **Check outliers**: If cluster -1 has many queries, your parameters may be too strict
 4. **Iterate**: Clustering is exploratory; try different combinations to find what works for your data
+
+# Visualization Options
+
+The clustering tool supports generating 2D visualizations of your query clusters using either t-SNE or UMAP dimensionality reduction algorithms. These visualizations help you understand the cluster structure and quality.
+
+## Generating Visualizations
+
+### t-SNE Visualization
+
+t-SNE (t-Distributed Stochastic Neighbor Embedding) is effective for visualizing high-dimensional data by preserving local structure.
+
+```bash
+python cluster.py --input queries.csv \
+  --output-summary summary.csv \
+  --output-samples samples.csv \
+  --visualize-tsne output/tsne_plot.png
+```
+
+**t-SNE Parameters:**
+
+- `--tsne-perplexity` (default: 30) - Balance between local and global structure. Use 5-50 for small datasets, 30-50 for larger ones.
+- `--tsne-learning-rate` (default: 200) - Learning rate for optimization. Typical range: 10-1000.
+- `--tsne-max-iter` (default: 1000) - Maximum iterations for optimization. Increase if the visualization doesn't converge.
+
+```bash
+# Example with custom t-SNE parameters
+python cluster.py --input queries.csv \
+  --output-summary summary.csv \
+  --visualize-tsne output/tsne_plot.png \
+  --tsne-perplexity 15 \
+  --tsne-learning-rate 150 \
+  --tsne-max-iter 1500
+```
+
+### UMAP Visualization
+
+UMAP (Uniform Manifold Approximation and Projection) is faster than t-SNE and often preserves both local and global structure better.
+
+```bash
+python cluster.py --input queries.csv \
+  --output-summary summary.csv \
+  --output-samples samples.csv \
+  --visualize-umap output/umap_plot.png
+```
+
+**UMAP Parameters:**
+
+- `--umap-n-neighbors` (default: 15) - Number of neighbors to consider. Smaller values focus on local structure (5-15), larger values on global structure (30-100).
+- `--umap-min-dist` (default: 0.1) - Minimum distance between points in the embedding. Smaller values create tighter clusters (0.0-0.5).
+- `--umap-metric` (default: 'euclidean') - Distance metric to use. Options include 'euclidean', 'manhattan', 'cosine', etc.
+
+```bash
+# Example with custom UMAP parameters
+python cluster.py --input queries.csv \
+  --output-summary summary.csv \
+  --visualize-umap output/umap_plot.png \
+  --umap-n-neighbors 10 \
+  --umap-min-dist 0.05 \
+  --umap-metric euclidean
+```
+
+### Generating Both Visualizations
+
+You can generate both t-SNE and UMAP visualizations in a single run:
+
+```bash
+python cluster.py --input queries.csv \
+  --output-summary summary.csv \
+  --output-samples samples.csv \
+  --visualize-tsne output/tsne_plot.png \
+  --visualize-umap output/umap_plot.png
+```
+
+## Understanding the Visualizations
+
+- **Colors**: Each cluster is shown in a different color
+- **Black Stars** (★): Mark the centroid query of each cluster
+- **X markers**: Used for outliers (cluster -1)
+- **Legend**: Shows which color corresponds to each cluster number
+
+Tight, well-separated clusters indicate good clustering quality, while overlapping clusters suggest you may need to adjust clustering parameters.
 
 # Provenance
 - https://docs.google.com/document/d/1P-r0vkVVEiCkKaIO6s2TkrO2h5Q6T5K0cxz0uMm5LM8/edit?tab=t.0
