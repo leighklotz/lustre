@@ -351,6 +351,25 @@ def visualize_clusters(reduced_embeddings, cluster_labels, _clusters, cluster_in
                        c='black', marker='*', s=300, 
                        edgecolors='yellow', linewidths=2,
                        zorder=5)
+            
+            # Smart positioning to avoid overlap
+            offset_x = 10 if centroid_2d[0] < embeddings_2d[:, 0].mean() else -10
+            offset_y = 10 if centroid_2d[1] < embeddings_2d[:, 1].mean() else -10
+            
+            # Label the cluster with its number
+            label_text = f"{cluster_id}" if cluster_id != -1 else "Out"
+            plt.annotate(label_text,
+                        xy=(centroid_2d[0], centroid_2d[1]),
+                        xytext=(offset_x, offset_y),  # Smart offset
+                        textcoords='offset points',
+                        fontsize=10,
+                        fontweight='bold',
+                        color='black',
+                        bbox=dict(boxstyle='round,pad=0.3', 
+                                 facecolor='white', 
+                                 edgecolor='black',
+                                  alpha=0.2),
+                        zorder=6)  # Higher than centroid marker
     
     # Add legend - if there are too many clusters it is giant so remove it
     if False:
