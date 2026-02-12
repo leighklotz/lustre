@@ -92,8 +92,117 @@ cluster,cluster_size,sample_type,distance_from_centroid,query
 ```
 
 # Cluster Tuning Parameters
-- `--min-cluster-size` is the minimum number of queries per cluster depends on the number of desired clusters depends and query corpus count
-- `--num-samples` is not actually tuning but output confirmation: Number of sample queries to show per cluster (default: 3)
+
+## Controlling Cluster Size and Tightness
+
+The following parameters control how HDBSCAN clusters your queries. Use these to adjust cluster size, tightness, and the number of clusters produced.
+
+### Core Parameters
+
+**`--min-cluster-size` (default: 2)**
+- Minimum number of queries required to form a cluster
+- **To get MORE clusters**: Decrease this value (e.g., `--min-cluster-size 2`)
+- **To get FEWER clusters**: Increase this value (e.g., `--min-cluster-size 10`)
+- Queries that don't meet this threshold become outliers (cluster -1)
+
+**`--min-samples` (default: 1)**
+- Number of samples in a neighborhood for a point to be considered a core point
+- **To get TIGHTER clusters**: Increase this value (e.g., `--min-samples 5` to `--min-samples 10`)
+- **To get LOOSER clusters**: Keep at 1 or use 2
+- Higher values make clustering more conservative and noise-resistant
+
+**`--cluster-selection-epsilon` (default: 0.0)**
+- Distance threshold below which clusters will be merged
+- **To get FEWER, LARGER clusters**: Increase this value (e.g., `--cluster-selection-epsilon 0.2` to `--cluster-selection-epsilon 0.5`)
+- **To get MORE, SMALLER clusters**: Keep at 0.0
+- Useful for consolidating very similar clusters
+
+**`--cluster-selection-method` (default: 'eom')**
+- Method for selecting clusters from the condensed tree
+- **Options**: `eom` (Excess of Mass) or `leaf`
+- **For TIGHTER, MORE UNIFORM clusters**: Use `--cluster-selection-method leaf`
+- **For FLEXIBLE, VARYING DENSITY clusters**: Use `--cluster-selection-method eom` (default)
+
+**`--alpha` (default: 1.0)**
+- Conservativeness parameter for cluster selection
+- **To get TIGHTER, MORE CONSERVATIVE clusters**: Increase (e.g., `--alpha 1.5` to `--alpha 2.0`)
+- **To get LOOSER clusters**: Decrease (e.g., `--alpha 0.8`)
+
+### Output Parameters
+
+**`--num-samples` (default: 3)**
+- Number of sample queries to show per cluster in the samples output file
+- Does not affect clustering, only output
+
+## Usage Examples
+
+### Default Behavior
+```bash
+python cluster.py --input queries.csv --output-summary summary.csv
+```
+
+### Get Fewer, Larger Clusters
+```bash
+# Increase min-cluster-size and merge similar clusters
+python cluster.py --input queries.csv \
+  --min-cluster-size 10 \
+  --cluster-selection-epsilon 0.3 \
+  --output-summary summary.csv
+```
+
+### Get More, Smaller Clusters
+```bash
+# Decrease min-cluster-size and avoid merging
+python cluster.py --input queries.csv \
+  --min-cluster-size 2 \
+  --cluster-selection-epsilon 0.0 \
+  --output-summary summary.csv
+```
+
+### Get Very Tight, High-Quality Clusters
+```bash
+# Use when you want only the most cohesive clusters
+python cluster.py --input queries.csv \
+  --min-samples 5 \
+  --cluster-selection-method leaf \
+  --alpha 1.5 \
+  --output-summary summary.csv
+```
+
+### Get Looser Clusters (More Inclusive)
+```bash
+# Use when you want to capture more queries in clusters
+python cluster.py --input queries.csv \
+  --min-samples 1 \
+  --alpha 0.8 \
+  --output-summary summary.csv
+```
+
+### Balanced Approach for Medium Datasets (100-1000 queries)
+```bash
+python cluster.py --input queries.csv \
+  --min-cluster-size 5 \
+  --min-samples 3 \
+  --cluster-selection-epsilon 0.1 \
+  --output-summary summary.csv
+```
+
+### For Large Datasets (1000+ queries)
+```bash
+# More conservative to avoid over-clustering
+python cluster.py --input queries.csv \
+  --min-cluster-size 10 \
+  --min-samples 5 \
+  --cluster-selection-epsilon 0.2 \
+  --output-summary summary.csv
+```
+
+## Tips for Tuning
+
+1. **Start with min-cluster-size**: This has the most direct impact on cluster count
+2. **Adjust incrementally**: Change one parameter at a time to see its effect
+3. **Check outliers**: If cluster -1 has many queries, your parameters may be too strict
+4. **Iterate**: Clustering is exploratory; try different combinations to find what works for your data
 
 # Provenance
 - https://docs.google.com/document/d/1P-r0vkVVEiCkKaIO6s2TkrO2h5Q6T5K0cxz0uMm5LM8/edit?tab=t.0
