@@ -19,8 +19,10 @@ $ . .venv/bin/activate
 Below is a simple run. For a more complex run, see [example](example).
 
 ```bash
-(.venv) $ python cluster.py --input example-input-queries.csv --output-summary output/summary.csv --output-samples output/cluster-samples.csv
+(.venv) $ python cluster.py --input example/example-input-queries.csv --output-summary output/summary.csv --output-samples output/cluster-samples.csv
 ```
+
+Note: The `--output-samples` parameter is optional. If omitted, only the summary file will be generated.
 
 ## Input `queries.csv` format:
 Users is space-separated.
@@ -36,7 +38,7 @@ query,count,runtime,users
 - `cluster`
 - `cluster_size`
 - `centroid_query`
-- `cluster_total_tunetime`
+- `cluster_total_runtime`
 - `cluster_total_runcount`
 - `cluster_all_users`
 
@@ -136,6 +138,19 @@ The following parameters control how HDBSCAN clusters your queries. Use these to
 - **To get LOOSER clusters**: Decrease (e.g., `--alpha 0.8`)
 
 ### Output Parameters
+
+**`--output-summary` (default: stdout)**
+- Path to output CSV file for cluster summary
+- If not specified, outputs to stdout
+
+**`--output-samples`**
+- Path to output CSV file for sample queries
+- Optional: if not specified, no samples file is generated
+
+**`--show-all-queries`**
+- When enabled, outputs all queries in each cluster without aggregating metrics
+- Produces a single file output instead of separate summary and samples files
+- Useful for detailed cluster inspection
 
 **`--num-samples-to-show` (default: 3)**
 - Number of sample queries to show per cluster in the samples output file
@@ -317,6 +332,12 @@ UMAP pre-clustering is an **optional feature** that is **off by default**. The o
 The clustering tool supports generating 2D visualizations of your query clusters using either t-SNE or UMAP dimensionality reduction algorithms. These visualizations help you understand the cluster structure and quality.
 
 **Note:** The visualization options (`--visualize-tsne` and `--visualize-umap`) are separate from the UMAP pre-clustering feature. Visualization creates 2D plots, while UMAP pre-clustering improves the actual clustering algorithm.
+
+**Important:** UMAP parameters have different names depending on their purpose:
+- **Visualization parameters** use `--umap-*` (e.g., `--umap-n-neighbors`, `--umap-min-dist`, `--umap-metric`)
+- **Pre-clustering parameters** use `--umap-cluster-*` (e.g., `--umap-cluster-n-neighbors`, `--umap-cluster-min-dist`, `--umap-cluster-metric`)
+
+These are separate features and their parameters do not affect each other.
 
 ## Generating Visualizations
 
