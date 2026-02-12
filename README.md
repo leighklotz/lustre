@@ -132,7 +132,7 @@ The following parameters control how HDBSCAN clusters your queries. Use these to
 
 ### Output Parameters
 
-**`--num-samples` (default: 3)**
+**`--num-samples-to-show` (default: 3)**
 - Number of sample queries to show per cluster in the samples output file
 - Does not affect clustering, only output
 

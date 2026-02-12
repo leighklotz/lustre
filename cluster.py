@@ -111,7 +111,7 @@ def get_clusters(query_label_pairs):
     return clusters, cluster_indices
 
 
-def get_sample_queries(cluster_embeddings, cluster_queries, num_samples=3):
+def get_sample_queries(cluster_embeddings, cluster_queries, num_samples_to_show=3):
     """
     Select representative queries from a cluster.
     Returns: list of (query_tuple, role, distance) tuples where:
@@ -129,22 +129,22 @@ def get_sample_queries(cluster_embeddings, cluster_queries, num_samples=3):
     centroid_idx = np.argmin(distances)
     samples.append((cluster_queries[centroid_idx], 'centroid', distances[centroid_idx]))
     
-    if num_samples > 1 and len(cluster_queries) > 1:
+    if num_samples_to_show > 1 and len(cluster_queries) > 1:
         # 2. Edge query (farthest from center)
         edge_idx = np.argmax(distances)
         if edge_idx != centroid_idx:
             samples.append((cluster_queries[edge_idx], 'edge', distances[edge_idx]))
     
-    if num_samples > 2 and len(cluster_queries) > 2:
+    if num_samples_to_show > 2 and len(cluster_queries) > 2:
         # 3. Median query (medium distance)
         median_idx = np.argsort(distances)[len(distances) // 2]
         if median_idx not in [centroid_idx, edge_idx]:
             samples.append((cluster_queries[median_idx], 'median', distances[median_idx]))
     
     # If we need more samples, use diversity sampling
-    if num_samples > 3 and len(cluster_queries) > 3:
+    if num_samples_to_show > 3 and len(cluster_queries) > 3:
         selected_indices = {centroid_idx, edge_idx, median_idx}
-        while len(samples) < num_samples and len(selected_indices) < len(cluster_queries):
+        while len(samples) < num_samples_to_show and len(selected_indices) < len(cluster_queries):
             # Find query farthest from all selected queries
             max_min_dist = -1
             best_idx = -1
@@ -164,12 +164,12 @@ def get_sample_queries(cluster_embeddings, cluster_queries, num_samples=3):
     return samples
 
 
-def print_clusters(query_label_pairs, summary_out, samples_out, show_all_queries, reduced_embeddings, num_samples=3):
+def print_clusters(query_label_pairs, summary_out, samples_out, show_all_queries, reduced_embeddings, num_samples_to_show=3):
     clusters, cluster_indices = get_clusters(query_label_pairs)
 
     if not show_all_queries:
         print_clusters_two_files(clusters, cluster_indices, reduced_embeddings, 
-                                summary_out, samples_out, num_samples)
+                                summary_out, samples_out, num_samples_to_show)
     else:
         print_clusters_all_queries(summary_out, clusters)
 
@@ -193,7 +193,7 @@ def print_clusters_all_queries(out, clusters):
 # File 1 (summary): One row per cluster with centroid query and cluster stats
 # File 2 (samples): N rows per cluster with sample queries (no stats)
 def print_clusters_two_files(clusters, cluster_indices, reduced_embeddings, 
-                             summary_out, samples_out, num_samples=3):
+                             summary_out, samples_out, num_samples_to_show=3):
     summary_writer = csv.writer(summary_out)
     
     # Summary file headers
@@ -218,7 +218,7 @@ def print_clusters_two_files(clusters, cluster_indices, reduced_embeddings,
         cluster_embeddings = reduced_embeddings[indices]
 
         # Get multiple sample queries
-        samples = get_sample_queries(cluster_embeddings, cluster_queries, num_samples)
+        samples = get_sample_queries(cluster_embeddings, cluster_queries, num_samples_to_show)
         
         # Aggregate metadata for entire cluster
         total_runtime = sum(q[1] for q in cluster_queries)
@@ -400,7 +400,7 @@ def visualize_clusters(reduced_embeddings, cluster_labels, _clusters, cluster_in
 
 
 def main(spl_queries, summary_output=None, samples_output=None, 
-         show_all_queries=False, min_cluster_size=MIN_CLUSTER_SIZE, num_samples=3,
+         show_all_queries=False, min_cluster_size=MIN_CLUSTER_SIZE, num_samples_to_show=3,
          min_samples=1, cluster_selection_epsilon=0.0, cluster_selection_method='eom', 
          alpha=1.0, visualize_tsne=None, visualize_umap=None,
          tsne_perplexity=30, tsne_learning_rate=200, tsne_max_iter=1000,
@@ -500,10 +500,10 @@ def main(spl_queries, summary_output=None, samples_output=None,
         if summary_output:
             with open(summary_output, 'w', newline='') as f:
                 print_clusters(zip(spl_queries, cluster_labels), f, None,
-                             show_all_queries, clustering_embeddings, num_samples)
+                             show_all_queries, clustering_embeddings, num_samples_to_show)
         else:
             print_clusters(zip(spl_queries, cluster_labels), sys.stdout, None,
-                         show_all_queries, clustering_embeddings, num_samples)
+                         show_all_queries, clustering_embeddings, num_samples_to_show)
     else:
         # Two-file output
         summary_file = open(summary_output, 'w', newline='') if summary_output else sys.stdout
@@ -511,7 +511,7 @@ def main(spl_queries, summary_output=None, samples_output=None,
         
         try:
             print_clusters(zip(spl_queries, cluster_labels), summary_file, samples_file,
-                         show_all_queries, clustering_embeddings, num_samples)
+                         show_all_queries, clustering_embeddings, num_samples_to_show)
         finally:
             if summary_output and summary_file != sys.stdout:
                 summary_file.close()
@@ -534,7 +534,7 @@ if __name__ == "__main__":
                         help="Show all queries in cluster and do not aggregate metrics (single file output)")
     parser.add_argument("--min-cluster-size", type=int, default=MIN_CLUSTER_SIZE,
                         help="Minimum cluster size for HDBSCAN (default: {})".format(MIN_CLUSTER_SIZE))
-    parser.add_argument("--num-samples", type=int, default=3,
+    parser.add_argument("--num-samples-to-show", type=int, default=3,
                         help="Number of sample queries to show per cluster (default: 3)")
     parser.add_argument("--min-samples", type=int, default=1,
                         help="Number of samples in a neighborhood for a core point (default: 1)")
@@ -585,7 +585,7 @@ if __name__ == "__main__":
          samples_output=args.output_samples,
          show_all_queries=args.show_all_queries, 
          min_cluster_size=args.min_cluster_size, 
-         num_samples=args.num_samples,
+         num_samples_to_show=args.num_samples_to_show,
          min_samples=args.min_samples,
          cluster_selection_epsilon=args.cluster_selection_epsilon,
          cluster_selection_method=args.cluster_selection_method,
