@@ -7,6 +7,8 @@ queries, for example varying in comparison values but largely similar.
 - [samples.csv](samples.csv)
 - [summary.csv](summary.csv)
 
+![umap_viz.png](umap_viz.png)
+
 ```
 (.venv) klotz@tensor:~/wip/lustre$ ./cluster.sh example/example-input-queries.csv 
 Loading weights: 100%|█████████████████████████████████| 199/199 [00:00<00:00, 730.45it/s, Materializing param=pooler.dense.weight]
