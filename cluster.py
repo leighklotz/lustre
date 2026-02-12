@@ -392,7 +392,8 @@ def main(spl_queries, summary_output=None, samples_output=None,
     # Use 50 components if UMAP will be applied, otherwise 10
     n_pca_components = 50 if use_umap_before_clustering else 10
     # Ensure we don't request more components than samples or features
-    n_pca_components = min(n_pca_components, embeddings.shape[0], embeddings.shape[1])
+    # PCA can produce at most min(n_samples - 1, n_features) components
+    n_pca_components = min(n_pca_components, embeddings.shape[0] - 1, embeddings.shape[1])
     pca = PCA(n_components=n_pca_components, random_state=0)
     reduced_embeddings = pca.fit_transform(embeddings)
 
@@ -401,7 +402,9 @@ def main(spl_queries, summary_output=None, samples_output=None,
         if not UMAP_AVAILABLE:
             print("Warning: UMAP not available, falling back to PCA-only approach")
             # Further reduce PCA to 5D as fallback
-            pca_5d = PCA(n_components=5, random_state=0)
+            # Ensure we have enough components and samples
+            n_components_5d = min(5, reduced_embeddings.shape[0] - 1, reduced_embeddings.shape[1])
+            pca_5d = PCA(n_components=n_components_5d, random_state=0)
             clustering_embeddings = pca_5d.fit_transform(reduced_embeddings)
         else:
             print(f"Applying UMAP reduction to {umap_cluster_n_components}D before clustering...")
@@ -429,8 +432,7 @@ def main(spl_queries, summary_output=None, samples_output=None,
     else:
         # Original approach: precomputed cosine distance
         clustering_embeddings = reduced_embeddings
-        # HDBSCAN expects a DISTANCE matrix when metric='precomputed'.
-        # You were passing a SIMILARITY matrix; convert to distance.
+        # Convert similarity matrix to distance matrix for HDBSCAN
         S = cosine_similarity(reduced_embeddings)          # similarity in [-1, 1]
         D = 1.0 - S                                       # cosine distance in [0, 2]
         np.fill_diagonal(D, 0.0)
