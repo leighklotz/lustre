@@ -523,6 +523,18 @@ if __name__ == "__main__":
     parser.add_argument("--alpha", type=float, default=1.0,
                         help="Conservativeness for cluster selection (default: 1.0)")
     
+    # UMAP pre-clustering options
+    parser.add_argument("--use-umap-before-clustering", action="store_true",
+                        help="Use UMAP dimensionality reduction before HDBSCAN clustering")
+    parser.add_argument("--umap-cluster-n-components", type=int, default=5,
+                        help="Number of UMAP components for clustering (default: 5)")
+    parser.add_argument("--umap-cluster-n-neighbors", type=int, default=20,
+                        help="UMAP n_neighbors for clustering (default: 20)")
+    parser.add_argument("--umap-cluster-min-dist", type=float, default=0.0,
+                        help="UMAP min_dist for clustering (default: 0.0)")
+    parser.add_argument("--umap-cluster-metric", type=str, default='cosine',
+                        help="UMAP metric for clustering (default: 'cosine')")
+
     # Visualization options
     parser.add_argument("--visualize-tsne", type=str,
                         help="Path to save t-SNE visualization (e.g., tsne_plot.png)")
@@ -541,18 +553,6 @@ if __name__ == "__main__":
                         help="UMAP min_dist parameter (default: 0.1)")
     parser.add_argument("--umap-metric", type=str, default='euclidean',
                         help="UMAP distance metric (default: 'euclidean')")
-    
-    # UMAP pre-clustering options
-    parser.add_argument("--use-umap-before-clustering", action="store_true",
-                        help="Use UMAP dimensionality reduction before HDBSCAN clustering")
-    parser.add_argument("--umap-cluster-n-components", type=int, default=5,
-                        help="Number of UMAP components for clustering (default: 5)")
-    parser.add_argument("--umap-cluster-n-neighbors", type=int, default=20,
-                        help="UMAP n_neighbors for clustering (default: 20)")
-    parser.add_argument("--umap-cluster-min-dist", type=float, default=0.0,
-                        help="UMAP min_dist for clustering (default: 0.0)")
-    parser.add_argument("--umap-cluster-metric", type=str, default='cosine',
-                        help="UMAP metric for clustering (default: 'cosine')")
     
     args = parser.parse_args()
 
