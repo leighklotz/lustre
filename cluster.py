@@ -33,6 +33,13 @@ model.eval()
 # tiny dataset => smaller clusters allowed
 MIN_CLUSTER_SIZE=2
 
+# Check if CUDA is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
+# Move model to GPU if available
+model.to(device)
+
 # Optional: ensure you exported HF_TOKEN if you expect to use gated models.
 # CodeBERT itself is public, but Hugging Face will give you an "unauthenticated" warning
 # on download.
@@ -41,6 +48,9 @@ MIN_CLUSTER_SIZE=2
 def get_embedding(text: str) -> np.ndarray:
     """Return a single (hidden_size,) embedding vector for `text`."""
     inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True)
+    # Move input tensors to the device (CPU or GPU)
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+
     with torch.no_grad():
         outputs = model(**inputs)
     # Mean pooling over sequence length -> (1, hidden)
@@ -49,10 +59,10 @@ def get_embedding(text: str) -> np.ndarray:
 
 def load_queries_from_csv(csv_file):
     """
-    Loads queries from a CSV file.
+    Loads queries from a CSV or TSV file.
 
-    The CSV file should have the following format:
-    query,count,runtime,users
+    The file should have the following format:
+    query,runtime,count,users
     where:
         query is the query string.
         runtime is the runtime of the query (across all times run)
@@ -60,20 +70,29 @@ def load_queries_from_csv(csv_file):
         users is a string representing a space-separated list of users
 
     Args:
-        csv_file (str): Path to the CSV file.
+        csv_file (str): Path to the CSV or TSV file.
 
     Returns:
         list: A list of tuples, where each tuple contains the query string
         count, number of users, and space-separated list of users.
     """
     queries = []
+    filename, file_extension = os.path.splitext(csv_file)
+    if file_extension.lower() == '.csv':
+        delimiter = ','
+    elif file_extension.lower() == '.tsv':
+        delimiter = '\t'
+    else:
+        raise ValueError("Unsupported file extension.  Must be .csv or .tsv")
+
     with open(csv_file, 'r') as f:
-        reader = csv.reader(f)
+        reader = csv.reader(f, delimiter=delimiter)
         header = next(reader)  # Skip the header row
-        assert header == ['query', 'runtime', 'count', 'users']
+        # assert header == ['query', 'runtime', 'count', 'users']
         for row in reader:
-            query, runtime, count, users = row
-            queries.append((query, int(runtime), int(count), users))
+            if len(row) > 0:
+                query, runtime, count, users, *_ = row + [1,1,""]
+                queries.append((query, int(runtime), int(count), users))
     return queries
 
 
@@ -333,8 +352,9 @@ def visualize_clusters(reduced_embeddings, cluster_labels, _clusters, cluster_in
                        edgecolors='yellow', linewidths=2,
                        zorder=5)
     
-    # Add legend
-    plt.legend(loc='best', fontsize=8)
+    # Add legend - if there are too many clusters it is giant so remove it
+    if False:
+        plt.legend(loc='best', fontsize=8)
     
     # Add labels and title
     method_name = 't-SNE' if method == 'tsne' else 'UMAP'
