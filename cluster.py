@@ -228,7 +228,9 @@ def print_clusters_two_files(clusters, cluster_indices, reduced_embeddings,
 
 
 def main(spl_queries, summary_output=None, samples_output=None, 
-         show_all_queries=False, min_cluster_size=MIN_CLUSTER_SIZE, num_samples=3):
+         show_all_queries=False, min_cluster_size=MIN_CLUSTER_SIZE, num_samples=3,
+         min_samples=1, cluster_selection_epsilon=0.0, cluster_selection_method='eom', 
+         alpha=1.0):
     # build embedding matrix: (n_samples, hidden)
     embeddings = np.vstack([get_embedding(q[0]) for q in spl_queries]).astype(np.float64)
 
@@ -245,8 +247,10 @@ def main(spl_queries, summary_output=None, samples_output=None,
     clusterer = hdbscan.HDBSCAN(
         metric="precomputed",
         min_cluster_size=min_cluster_size,
-        min_samples=1,
-        cluster_selection_epsilon=0.0,
+        min_samples=min_samples,
+        cluster_selection_epsilon=cluster_selection_epsilon,
+        cluster_selection_method=cluster_selection_method,
+        alpha=alpha,
     )
 
     cluster_labels = clusterer.fit_predict(D)
@@ -293,6 +297,15 @@ if __name__ == "__main__":
                         help="Minimum cluster size for HDBSCAN (default: {})".format(MIN_CLUSTER_SIZE))
     parser.add_argument("--num-samples", type=int, default=3,
                         help="Number of sample queries to show per cluster (default: 3)")
+    parser.add_argument("--min-samples", type=int, default=1,
+                        help="Number of samples in a neighborhood for a core point (default: 1)")
+    parser.add_argument("--cluster-selection-epsilon", type=float, default=0.0,
+                        help="Distance threshold for merging clusters (default: 0.0)")
+    parser.add_argument("--cluster-selection-method", type=str, default='eom',
+                        choices=['eom', 'leaf'],
+                        help="Method for selecting clusters from the tree (default: 'eom')")
+    parser.add_argument("--alpha", type=float, default=1.0,
+                        help="Conservativeness for cluster selection (default: 1.0)")
     args = parser.parse_args()
 
     spl_queries = load_queries_from_csv(args.input)
@@ -301,4 +314,8 @@ if __name__ == "__main__":
          samples_output=args.output_samples,
          show_all_queries=args.show_all_queries, 
          min_cluster_size=args.min_cluster_size, 
-         num_samples=args.num_samples)
+         num_samples=args.num_samples,
+         min_samples=args.min_samples,
+         cluster_selection_epsilon=args.cluster_selection_epsilon,
+         cluster_selection_method=args.cluster_selection_method,
+         alpha=args.alpha)
