@@ -381,30 +381,72 @@ def main(spl_queries, summary_output=None, samples_output=None,
          min_samples=1, cluster_selection_epsilon=0.0, cluster_selection_method='eom', 
          alpha=1.0, visualize_tsne=None, visualize_umap=None,
          tsne_perplexity=30, tsne_learning_rate=200, tsne_max_iter=1000,
-         umap_n_neighbors=15, umap_min_dist=0.1, umap_metric='euclidean'):
+         umap_n_neighbors=15, umap_min_dist=0.1, umap_metric='euclidean',
+         use_umap_before_clustering=False, umap_cluster_n_components=5,
+         umap_cluster_n_neighbors=20, umap_cluster_min_dist=0.0,
+         umap_cluster_metric='cosine'):
     # build embedding matrix: (n_samples, hidden)
     embeddings = np.vstack([get_embedding(q[0]) for q in spl_queries]).astype(np.float64)
 
     # Dimensionality reduction (PCA)
-    pca = PCA(n_components=10, random_state=0)
+    # Use 50 components if UMAP will be applied, otherwise 10
+    n_pca_components = 50 if use_umap_before_clustering else 10
+    # Ensure we don't request more components than samples or features
+    # PCA can produce at most min(n_samples - 1, n_features) components
+    n_pca_components = min(n_pca_components, embeddings.shape[0] - 1, embeddings.shape[1])
+    pca = PCA(n_components=n_pca_components, random_state=0)
     reduced_embeddings = pca.fit_transform(embeddings)
 
-    # HDBSCAN expects a DISTANCE matrix when metric='precomputed'.
-    # You were passing a SIMILARITY matrix; convert to distance.
-    S = cosine_similarity(reduced_embeddings)          # similarity in [-1, 1]
-    D = 1.0 - S                                       # cosine distance in [0, 2]
-    np.fill_diagonal(D, 0.0)
+    # Optional UMAP reduction before clustering
+    if use_umap_before_clustering:
+        if not UMAP_AVAILABLE:
+            print("Warning: UMAP not available, falling back to PCA-only approach")
+            # Further reduce PCA to 5D as fallback
+            # Ensure we have enough components and samples
+            n_components_5d = min(5, reduced_embeddings.shape[0] - 1, reduced_embeddings.shape[1])
+            pca_5d = PCA(n_components=n_components_5d, random_state=0)
+            clustering_embeddings = pca_5d.fit_transform(reduced_embeddings)
+        else:
+            print(f"Applying UMAP reduction to {umap_cluster_n_components}D before clustering...")
+            umap_reducer = umap.UMAP(
+                n_components=umap_cluster_n_components,
+                n_neighbors=umap_cluster_n_neighbors,
+                min_dist=umap_cluster_min_dist,
+                metric=umap_cluster_metric,
+                random_state=42,
+                verbose=True
+            )
+            clustering_embeddings = umap_reducer.fit_transform(reduced_embeddings)
+            print(f"UMAP reduction complete: {clustering_embeddings.shape}")
+        
+        # Use euclidean metric with UMAP output
+        clusterer = hdbscan.HDBSCAN(
+            metric="euclidean",  # NOT precomputed
+            min_cluster_size=min_cluster_size,
+            min_samples=min_samples,
+            cluster_selection_epsilon=cluster_selection_epsilon,
+            cluster_selection_method=cluster_selection_method,
+            alpha=alpha,
+        )
+        cluster_labels = clusterer.fit_predict(clustering_embeddings)
+    else:
+        # Original approach: precomputed cosine distance
+        clustering_embeddings = reduced_embeddings
+        # Convert similarity matrix to distance matrix for HDBSCAN
+        S = cosine_similarity(reduced_embeddings)          # similarity in [-1, 1]
+        D = 1.0 - S                                       # cosine distance in [0, 2]
+        np.fill_diagonal(D, 0.0)
 
-    clusterer = hdbscan.HDBSCAN(
-        metric="precomputed",
-        min_cluster_size=min_cluster_size,
-        min_samples=min_samples,
-        cluster_selection_epsilon=cluster_selection_epsilon,
-        cluster_selection_method=cluster_selection_method,
-        alpha=alpha,
-    )
+        clusterer = hdbscan.HDBSCAN(
+            metric="precomputed",
+            min_cluster_size=min_cluster_size,
+            min_samples=min_samples,
+            cluster_selection_epsilon=cluster_selection_epsilon,
+            cluster_selection_method=cluster_selection_method,
+            alpha=alpha,
+        )
 
-    cluster_labels = clusterer.fit_predict(D)
+        cluster_labels = clusterer.fit_predict(D)
 
     # Generate visualizations if requested
     if visualize_tsne or visualize_umap:
@@ -417,7 +459,7 @@ def main(spl_queries, summary_output=None, samples_output=None,
                 'learning_rate': tsne_learning_rate,
                 'max_iter': tsne_max_iter
             }
-            visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_indices,
+            visualize_clusters(clustering_embeddings, cluster_labels, clusters, cluster_indices,
                              visualize_tsne, method='tsne', **tsne_params)
         
         if visualize_umap:
@@ -426,7 +468,7 @@ def main(spl_queries, summary_output=None, samples_output=None,
                 'min_dist': umap_min_dist,
                 'metric': umap_metric
             }
-            visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_indices,
+            visualize_clusters(clustering_embeddings, cluster_labels, clusters, cluster_indices,
                              visualize_umap, method='umap', **umap_params)
 
     # Handle output files
@@ -435,10 +477,10 @@ def main(spl_queries, summary_output=None, samples_output=None,
         if summary_output:
             with open(summary_output, 'w', newline='') as f:
                 print_clusters(zip(spl_queries, cluster_labels), f, None,
-                             show_all_queries, reduced_embeddings, num_samples)
+                             show_all_queries, clustering_embeddings, num_samples)
         else:
             print_clusters(zip(spl_queries, cluster_labels), sys.stdout, None,
-                         show_all_queries, reduced_embeddings, num_samples)
+                         show_all_queries, clustering_embeddings, num_samples)
     else:
         # Two-file output
         summary_file = open(summary_output, 'w', newline='') if summary_output else sys.stdout
@@ -446,7 +488,7 @@ def main(spl_queries, summary_output=None, samples_output=None,
         
         try:
             print_clusters(zip(spl_queries, cluster_labels), summary_file, samples_file,
-                         show_all_queries, reduced_embeddings, num_samples)
+                         show_all_queries, clustering_embeddings, num_samples)
         finally:
             if summary_output and summary_file != sys.stdout:
                 summary_file.close()
@@ -481,6 +523,18 @@ if __name__ == "__main__":
     parser.add_argument("--alpha", type=float, default=1.0,
                         help="Conservativeness for cluster selection (default: 1.0)")
     
+    # UMAP pre-clustering options
+    parser.add_argument("--use-umap-before-clustering", action="store_true",
+                        help="Use UMAP dimensionality reduction before HDBSCAN clustering")
+    parser.add_argument("--umap-cluster-n-components", type=int, default=5,
+                        help="Number of UMAP components for clustering (default: 5)")
+    parser.add_argument("--umap-cluster-n-neighbors", type=int, default=20,
+                        help="UMAP n_neighbors for clustering (default: 20)")
+    parser.add_argument("--umap-cluster-min-dist", type=float, default=0.0,
+                        help="UMAP min_dist for clustering (default: 0.0)")
+    parser.add_argument("--umap-cluster-metric", type=str, default='cosine',
+                        help="UMAP metric for clustering (default: 'cosine')")
+
     # Visualization options
     parser.add_argument("--visualize-tsne", type=str,
                         help="Path to save t-SNE visualization (e.g., tsne_plot.png)")
@@ -520,4 +574,9 @@ if __name__ == "__main__":
          tsne_max_iter=args.tsne_max_iter,
          umap_n_neighbors=args.umap_n_neighbors,
          umap_min_dist=args.umap_min_dist,
-         umap_metric=args.umap_metric)
+         umap_metric=args.umap_metric,
+         use_umap_before_clustering=args.use_umap_before_clustering,
+         umap_cluster_n_components=args.umap_cluster_n_components,
+         umap_cluster_n_neighbors=args.umap_cluster_n_neighbors,
+         umap_cluster_min_dist=args.umap_cluster_min_dist,
+         umap_cluster_metric=args.umap_cluster_metric)
