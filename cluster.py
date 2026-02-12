@@ -249,11 +249,11 @@ def visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_ind
         # Default t-SNE parameters
         perplexity = method_params.get('perplexity', 30)
         learning_rate = method_params.get('learning_rate', 200)
-        n_iter = method_params.get('n_iter', 1000)
+        max_iter = method_params.get('max_iter', 1000)
         random_state = method_params.get('random_state', 42)
         
         reducer = TSNE(n_components=2, perplexity=perplexity, 
-                      learning_rate=learning_rate, n_iter=n_iter, 
+                      learning_rate=learning_rate, max_iter=max_iter, 
                       random_state=random_state)
     elif method == 'umap':
         try:
@@ -350,7 +350,7 @@ def main(spl_queries, summary_output=None, samples_output=None,
          show_all_queries=False, min_cluster_size=MIN_CLUSTER_SIZE, num_samples=3,
          min_samples=1, cluster_selection_epsilon=0.0, cluster_selection_method='eom', 
          alpha=1.0, visualize_tsne=None, visualize_umap=None,
-         tsne_perplexity=30, tsne_learning_rate=200, tsne_n_iter=1000,
+         tsne_perplexity=30, tsne_learning_rate=200, tsne_max_iter=1000,
          umap_n_neighbors=15, umap_min_dist=0.1, umap_metric='euclidean'):
     # build embedding matrix: (n_samples, hidden)
     embeddings = np.vstack([get_embedding(q[0]) for q in spl_queries]).astype(np.float64)
@@ -384,7 +384,7 @@ def main(spl_queries, summary_output=None, samples_output=None,
         tsne_params = {
             'perplexity': tsne_perplexity,
             'learning_rate': tsne_learning_rate,
-            'n_iter': tsne_n_iter,
+            'max_iter': tsne_max_iter,
             'random_state': 42
         }
         visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_indices,
@@ -459,8 +459,8 @@ if __name__ == "__main__":
                         help="t-SNE perplexity parameter (default: 30)")
     parser.add_argument("--tsne-learning-rate", type=float, default=200,
                         help="t-SNE learning rate parameter (default: 200)")
-    parser.add_argument("--tsne-n-iter", type=int, default=1000,
-                        help="t-SNE number of iterations (default: 1000)")
+    parser.add_argument("--tsne-max-iter", type=int, default=1000,
+                        help="t-SNE maximum number of iterations (default: 1000)")
     
     parser.add_argument("--visualize-umap", type=str,
                         help="Path to save UMAP visualization (e.g., umap_plot.png)")
@@ -488,7 +488,7 @@ if __name__ == "__main__":
          visualize_umap=args.visualize_umap,
          tsne_perplexity=args.tsne_perplexity,
          tsne_learning_rate=args.tsne_learning_rate,
-         tsne_n_iter=args.tsne_n_iter,
+         tsne_max_iter=args.tsne_max_iter,
          umap_n_neighbors=args.umap_n_neighbors,
          umap_min_dist=args.umap_min_dist,
          umap_metric=args.umap_metric)
