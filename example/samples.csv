@@ -1,0 +1,24 @@
+cluster,cluster_size,sample_type,distance_from_centroid,query
+0,4,centroid,0.2726,index=main sourcetype=syslog warn
+0,4,edge,0.5351,index=main sourcetype=syslog debug
+0,4,median,0.5317,index=main sourcetype=syslog info
+0,4,diverse,0.3061,index=main sourcetype=syslog error
+1,6,centroid,0.2591,stats count(host) by user
+1,6,edge,0.5741,"stats sum(bytes) as b by host,user"
+1,6,median,0.4561,"stats count by user, host"
+1,6,diverse,0.3198,stats count(user) by host
+1,6,diverse,0.2937,stats sum(bytes) by host
+1,6,diverse,0.4904,stats count by user
+2,5,centroid,0.1963,search index=web sourcetype=apache_access status=401
+2,5,edge,0.4127,search index=web sourcetype=apache_access status=404
+2,5,median,0.3813,search index=web sourcetype=apache_access status=400
+2,5,diverse,0.3970,search index=web sourcetype=apache_access status=403
+2,5,diverse,0.3547,search index=web sourcetype=apache_access status=500
+3,4,centroid,0.1437,index=web sourcetype=apache_error error
+3,4,edge,0.2473,index=web sourcetype=apache_error debug
+3,4,median,0.2214,index=web sourcetype=apache_error warn
+3,4,diverse,0.2139,index=web sourcetype=apache_error info
+4,4,centroid,0.0019,search index=main sourcetype=access_combined status=401
+4,4,edge,0.2945,search index=main sourcetype=access_combined status=404
+4,4,median,0.2700,search index=main sourcetype=access_combined status=5001
+4,4,diverse,0.0227,search index=main sourcetype=access_combined status=400

@@ -1,0 +1,6 @@
+cluster,cluster_size,centroid_query,cluster_total_runtime,cluster_total_runcount,cluster_all_users
+0,4,index=main sourcetype=syslog warn,730,9,user11 user16 user19 user2 user22 user3 user5
+1,6,stats count(host) by user,1440,23,user13 user18 user2 user21 user3 user4 user5 user7 user9
+2,5,search index=web sourcetype=apache_access status=401,2840,25,user1 user12 user14 user15 user2 user23 user24 user4 user5
+3,4,index=web sourcetype=apache_error error,2134,15,user1 user20 user25 user3 user6
+4,4,search index=main sourcetype=access_combined status=401,1621,45,AAA BBB user1 user17 user2 user4 user5 user8

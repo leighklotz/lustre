@@ -356,8 +356,8 @@ def visualize_clusters(reduced_embeddings, cluster_labels, _clusters, cluster_in
             offset_x = 10 if centroid_2d[0] < embeddings_2d[:, 0].mean() else -10
             offset_y = 10 if centroid_2d[1] < embeddings_2d[:, 1].mean() else -10
             
-            # Label the cluster with its number
-            label_text = f"{cluster_id}" if cluster_id != -1 else "Out"
+            # Label the cluster with its number and number of queries
+            label_text = f"{cluster_id}#{len(indices)}" 
 
             # Get the color for this cluster and convert to hex for text
             cluster_color = color_map[cluster_id]

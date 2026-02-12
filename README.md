@@ -3,7 +3,7 @@
 This project clusters sanitized queries into similarity groups and gives aggregate statistics and one or more sample queries.
 
 # Installation and Quick Start
-First, choose either `requirements.txt` or `requirements-gpu.txt`.
+1. First, choose either `requirements.txt` or `requirements-gpu.txt`.
 
 ```bash
 $ git clone https://github.com/leighklotz/lustre/
@@ -14,6 +14,11 @@ Python 3.12.3
 $ python3 -m venv .venv
 $ . .venv/bin/activate
 (.venv) $ pip install -r requirements.txt 
+```
+
+Below is a simple run. For a more complex run, see [examples](examples).
+
+```bash
 (.venv) $ python cluster.py --input example-input-queries.csv --output-summary output/summary.csv --output-samples output/cluster-samples.csv
 ```
 
