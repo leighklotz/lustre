@@ -12,6 +12,9 @@ import warnings
 from transformers import AutoTokenizer, AutoModel
 from sklearn.decomposition import PCA
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 # Load CodeBERT
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
@@ -227,10 +230,128 @@ def print_clusters_two_files(clusters, cluster_indices, reduced_embeddings,
                 ])
 
 
+def visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_indices, 
+                       output_path, method='tsne', **method_params):
+    """
+    Visualize clusters using dimensionality reduction (t-SNE or UMAP).
+    
+    Args:
+        reduced_embeddings: The PCA-reduced embeddings (from main function)
+        cluster_labels: Array of cluster labels for each query
+        clusters: Dict mapping cluster_id -> list of query tuples
+        cluster_indices: Dict mapping cluster_id -> list of original indices
+        output_path: Path to save the visualization
+        method: 'tsne' or 'umap'
+        **method_params: Additional parameters for the reduction method
+    """
+    # Apply dimensionality reduction to 2D
+    if method == 'tsne':
+        # Default t-SNE parameters
+        perplexity = method_params.get('perplexity', 30)
+        learning_rate = method_params.get('learning_rate', 200)
+        n_iter = method_params.get('n_iter', 1000)
+        random_state = method_params.get('random_state', 42)
+        
+        reducer = TSNE(n_components=2, perplexity=perplexity, 
+                      learning_rate=learning_rate, n_iter=n_iter, 
+                      random_state=random_state)
+    elif method == 'umap':
+        try:
+            import umap
+        except ImportError:
+            print("Error: umap-learn package not installed. Please install with: pip install umap-learn")
+            return
+        
+        # Default UMAP parameters
+        n_neighbors = method_params.get('n_neighbors', 15)
+        min_dist = method_params.get('min_dist', 0.1)
+        metric = method_params.get('metric', 'euclidean')
+        random_state = method_params.get('random_state', 42)
+        
+        reducer = umap.UMAP(n_components=2, n_neighbors=n_neighbors,
+                           min_dist=min_dist, metric=metric,
+                           random_state=random_state)
+    else:
+        raise ValueError(f"Unknown visualization method: {method}")
+    
+    # Reduce to 2D
+    embeddings_2d = reducer.fit_transform(reduced_embeddings)
+    
+    # Create figure
+    plt.figure(figsize=(12, 8))
+    
+    # Get unique cluster labels and sort them
+    unique_labels = sorted(set(cluster_labels))
+    
+    # Create a colormap - use a colorblind-friendly palette
+    colors = plt.cm.tab10(np.linspace(0, 1, len(unique_labels)))
+    color_map = {label: colors[i] for i, label in enumerate(unique_labels)}
+    
+    # Plot each cluster
+    for label in unique_labels:
+        mask = cluster_labels == label
+        cluster_points = embeddings_2d[mask]
+        
+        # Use different markers for outliers vs regular clusters
+        if label == -1:
+            plt.scatter(cluster_points[:, 0], cluster_points[:, 1],
+                       c=[color_map[label]], label=f'Outliers (cluster {label})',
+                       alpha=0.6, s=50, marker='x')
+        else:
+            plt.scatter(cluster_points[:, 0], cluster_points[:, 1],
+                       c=[color_map[label]], label=f'Cluster {label}',
+                       alpha=0.6, s=50)
+    
+    # Mark centroids with distinct markers
+    for cluster_id in unique_labels:
+        if cluster_id in cluster_indices:
+            indices = cluster_indices[cluster_id]
+            cluster_embeddings = reduced_embeddings[indices]
+            
+            # Calculate centroid in the original reduced space
+            centroid = np.mean(cluster_embeddings, axis=0)
+            distances = np.linalg.norm(cluster_embeddings - centroid, axis=1)
+            centroid_idx_in_cluster = np.argmin(distances)
+            centroid_idx = indices[centroid_idx_in_cluster]
+            
+            # Get the 2D position of the centroid
+            centroid_2d = embeddings_2d[centroid_idx]
+            
+            # Plot centroid with a distinct marker
+            plt.scatter(centroid_2d[0], centroid_2d[1],
+                       c='black', marker='*', s=300, 
+                       edgecolors='yellow', linewidths=2,
+                       zorder=5)
+    
+    # Add legend
+    plt.legend(loc='best', fontsize=8)
+    
+    # Add labels and title
+    method_name = 't-SNE' if method == 'tsne' else 'UMAP'
+    plt.title(f'Query Cluster Visualization using {method_name}')
+    plt.xlabel(f'{method_name} Component 1')
+    plt.ylabel(f'{method_name} Component 2')
+    
+    # Add a note about centroid markers
+    plt.text(0.02, 0.98, '★ = Cluster Centroid', 
+            transform=plt.gca().transAxes,
+            verticalalignment='top',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+    
+    plt.tight_layout()
+    
+    # Save the figure
+    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    print(f"Visualization saved to: {output_path}")
+    plt.close()
+
+
 def main(spl_queries, summary_output=None, samples_output=None, 
          show_all_queries=False, min_cluster_size=MIN_CLUSTER_SIZE, num_samples=3,
          min_samples=1, cluster_selection_epsilon=0.0, cluster_selection_method='eom', 
-         alpha=1.0):
+         alpha=1.0, visualize_tsne=None, visualize_umap=None,
+         tsne_perplexity=30, tsne_learning_rate=200, tsne_n_iter=1000,
+         umap_n_neighbors=15, umap_min_dist=0.1, umap_metric='euclidean'):
     # build embedding matrix: (n_samples, hidden)
     embeddings = np.vstack([get_embedding(q[0]) for q in spl_queries]).astype(np.float64)
 
@@ -254,6 +375,30 @@ def main(spl_queries, summary_output=None, samples_output=None,
     )
 
     cluster_labels = clusterer.fit_predict(D)
+
+    # Get clusters for visualization
+    clusters, cluster_indices = get_clusters(zip(spl_queries, cluster_labels))
+    
+    # Generate visualizations if requested
+    if visualize_tsne:
+        tsne_params = {
+            'perplexity': tsne_perplexity,
+            'learning_rate': tsne_learning_rate,
+            'n_iter': tsne_n_iter,
+            'random_state': 42
+        }
+        visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_indices,
+                         visualize_tsne, method='tsne', **tsne_params)
+    
+    if visualize_umap:
+        umap_params = {
+            'n_neighbors': umap_n_neighbors,
+            'min_dist': umap_min_dist,
+            'metric': umap_metric,
+            'random_state': 42
+        }
+        visualize_clusters(reduced_embeddings, cluster_labels, clusters, cluster_indices,
+                         visualize_umap, method='umap', **umap_params)
 
     # Handle output files
     if show_all_queries:
@@ -306,6 +451,26 @@ if __name__ == "__main__":
                         help="Method for selecting clusters from the tree (default: 'eom')")
     parser.add_argument("--alpha", type=float, default=1.0,
                         help="Conservativeness for cluster selection (default: 1.0)")
+    
+    # Visualization options
+    parser.add_argument("--visualize-tsne", type=str,
+                        help="Path to save t-SNE visualization (e.g., tsne_plot.png)")
+    parser.add_argument("--tsne-perplexity", type=float, default=30,
+                        help="t-SNE perplexity parameter (default: 30)")
+    parser.add_argument("--tsne-learning-rate", type=float, default=200,
+                        help="t-SNE learning rate parameter (default: 200)")
+    parser.add_argument("--tsne-n-iter", type=int, default=1000,
+                        help="t-SNE number of iterations (default: 1000)")
+    
+    parser.add_argument("--visualize-umap", type=str,
+                        help="Path to save UMAP visualization (e.g., umap_plot.png)")
+    parser.add_argument("--umap-n-neighbors", type=int, default=15,
+                        help="UMAP n_neighbors parameter (default: 15)")
+    parser.add_argument("--umap-min-dist", type=float, default=0.1,
+                        help="UMAP min_dist parameter (default: 0.1)")
+    parser.add_argument("--umap-metric", type=str, default='euclidean',
+                        help="UMAP distance metric (default: 'euclidean')")
+    
     args = parser.parse_args()
 
     spl_queries = load_queries_from_csv(args.input)
@@ -318,4 +483,12 @@ if __name__ == "__main__":
          min_samples=args.min_samples,
          cluster_selection_epsilon=args.cluster_selection_epsilon,
          cluster_selection_method=args.cluster_selection_method,
-         alpha=args.alpha)
+         alpha=args.alpha,
+         visualize_tsne=args.visualize_tsne,
+         visualize_umap=args.visualize_umap,
+         tsne_perplexity=args.tsne_perplexity,
+         tsne_learning_rate=args.tsne_learning_rate,
+         tsne_n_iter=args.tsne_n_iter,
+         umap_n_neighbors=args.umap_n_neighbors,
+         umap_min_dist=args.umap_min_dist,
+         umap_metric=args.umap_metric)

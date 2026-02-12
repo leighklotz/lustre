@@ -4,3 +4,5 @@ numpy
 scikit-learn
 hdbscan
 torch
+matplotlib
+umap-learn
