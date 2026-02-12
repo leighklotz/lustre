@@ -358,17 +358,21 @@ def visualize_clusters(reduced_embeddings, cluster_labels, _clusters, cluster_in
             
             # Label the cluster with its number
             label_text = f"{cluster_id}" if cluster_id != -1 else "Out"
+
+            # Get the color for this cluster and convert to hex for text
+            cluster_color = color_map[cluster_id]
+
             plt.annotate(label_text,
                         xy=(centroid_2d[0], centroid_2d[1]),
                         xytext=(offset_x, offset_y),  # Smart offset
                         textcoords='offset points',
                         fontsize=10,
                         fontweight='bold',
-                        color='black',
+                        color=cluster_color,
                         bbox=dict(boxstyle='round,pad=0.3', 
                                  facecolor='white', 
-                                 edgecolor='black',
-                                  alpha=0.2),
+                                 edgecolor='none',
+                                 alpha=0.2),
                         zorder=6)  # Higher than centroid marker
     
     # Add legend - if there are too many clusters it is giant so remove it
