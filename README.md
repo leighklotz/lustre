@@ -3,6 +3,8 @@
 This project clusters sanitized queries into similarity groups and gives aggregate statistics and one or more sample queries.
 
 # Installation and Quick Start
+First, choose either `requirements.txt` or `requirements-gpu.txt`.
+
 ```bash
 $ git clone https://github.com/leighklotz/lustre/
 $ cd lustre
