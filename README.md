@@ -206,9 +206,112 @@ python cluster.py --input queries.csv \
 3. **Check outliers**: If cluster -1 has many queries, your parameters may be too strict
 4. **Iterate**: Clustering is exploratory; try different combinations to find what works for your data
 
+# Advanced: UMAP Pre-Clustering
+
+By default, the clustering tool uses PCA (10D) followed by cosine similarity and HDBSCAN with precomputed distances. For improved cluster quality and separation, you can enable optional UMAP-based dimensionality reduction before clustering.
+
+## Why Use UMAP Pre-Clustering?
+
+The default approach has some limitations:
+- **PCA is linear** and may miss non-linear semantic patterns in embeddings
+- **10D is relatively high** for density-based clustering (curse of dimensionality)
+- **Precomputed distances** are less flexible than direct metric computation
+
+UMAP pre-clustering addresses these issues:
+- **Non-linear manifold learning** preserves semantic structure better
+- **5D is optimal** for HDBSCAN density calculations
+- **Better cluster separation** and fewer outliers
+- **Well-established approach** in NLP/ML communities
+
+## How It Works
+
+When enabled, the pipeline changes from:
+```
+CodeBERT Embeddings (768D) → PCA (10D) → Cosine Distance → HDBSCAN
+```
+
+To:
+```
+CodeBERT Embeddings (768D) → PCA (50D) → UMAP (5D) → HDBSCAN (Euclidean)
+```
+
+The 50D PCA step before UMAP helps denoise and speeds up UMAP computation.
+
+## Usage
+
+### Basic Usage
+
+Enable UMAP pre-clustering with the `--use-umap-before-clustering` flag:
+
+```bash
+python cluster.py --input queries.csv \
+  --output-summary summary.csv \
+  --output-samples samples.csv \
+  --use-umap-before-clustering
+```
+
+### Custom Parameters
+
+Fine-tune the UMAP reduction with these parameters:
+
+- `--umap-cluster-n-components` (default: 5) - Target dimensionality for clustering. 5D is optimal for HDBSCAN.
+- `--umap-cluster-n-neighbors` (default: 20) - Balance between local and global structure (15-30 recommended).
+- `--umap-cluster-min-dist` (default: 0.0) - Minimum distance between points. Use 0.0 for maximum cluster separation.
+- `--umap-cluster-metric` (default: 'cosine') - Distance metric. 'cosine' is best for text embeddings.
+
+```bash
+# Example with custom UMAP pre-clustering parameters
+python cluster.py --input queries.csv \
+  --output-summary summary.csv \
+  --use-umap-before-clustering \
+  --umap-cluster-n-neighbors 30 \
+  --umap-cluster-min-dist 0.0 \
+  --umap-cluster-metric cosine
+```
+
+## Expected Improvements
+
+When using UMAP pre-clustering, you can expect:
+- **Better cluster separation** - More distinct, well-separated clusters
+- **Fewer outliers** - Reduced number of queries in cluster -1
+- **More semantic coherence** - Clusters better reflect semantic similarity
+- **Faster HDBSCAN** - 5D vs 10D reduces computational cost
+
+## Fallback Behavior
+
+If UMAP is not installed, the tool automatically falls back to a PCA-only approach:
+- PCA is reduced to 5D (instead of UMAP)
+- You'll see a warning message
+- Install umap-learn to use the full UMAP approach: `pip install umap-learn`
+
+## When to Use
+
+Consider using UMAP pre-clustering when:
+- You have complex, semantically diverse queries
+- Default clustering produces too many outliers
+- You want better cluster quality and separation
+- You have a larger dataset (100+ queries)
+
+## Comparison with Default Approach
+
+| Aspect | Default (PCA + Cosine) | UMAP Pre-Clustering |
+|--------|------------------------|---------------------|
+| Dimensionality Reduction | Linear (PCA 10D) | Non-linear (PCA 50D → UMAP 5D) |
+| Clustering Metric | Precomputed cosine distance | Euclidean distance |
+| Cluster Quality | Good for linear patterns | Better for complex patterns |
+| Outlier Rate | May be higher | Usually lower |
+| Computation Time | Faster | Slightly slower (UMAP overhead) |
+| Best For | Quick analysis, simple patterns | Complex queries, better quality |
+
+## Note
+
+UMAP pre-clustering is an **optional feature** that is **off by default**. The original PCA + precomputed distance approach remains the default to maintain backward compatibility.
+
 # Visualization Options
 
 The clustering tool supports generating 2D visualizations of your query clusters using either t-SNE or UMAP dimensionality reduction algorithms. These visualizations help you understand the cluster structure and quality.
+
+**Note:** The visualization options (`--visualize-tsne` and `--visualize-umap`) are separate from the UMAP pre-clustering feature. Visualization creates 2D plots, while UMAP pre-clustering improves the actual clustering algorithm.
 
 ## Generating Visualizations
 
