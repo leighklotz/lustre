@@ -24,15 +24,19 @@ Below is a simple run. For a more complex run, see [example](example).
 
 Note: The `--output-samples` parameter is optional. If omitted, only the summary file will be generated.
 
-## Input `queries.csv` format:
-Users is space-separated.
+## Input `queries.csv` and `queries.tsv` format:
+The `users` field is space-separated.
 
 ```csv
-query,count,runtime,users
+query,runtime,count,users
 "index=web sourcetype=apache_error warn",1434,7,"user1 user3"
 "stats count by user",100,5,"user2 user4"
 "search index=main sourcetype=access_combined status=404",500,3,"user1 user5"
 ```
+
+- `runtime`: total runtime across all runs (integer seconds)
+- `count`: total number of runs (integer)
+
 
 ## Summary File Output fields
 - `cluster`
