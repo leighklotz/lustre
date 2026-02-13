@@ -198,6 +198,8 @@ Markers:
 
 # Usage Examples
 
+For more examples, see [examples](examples) and see [docs/TUNING.md](docs/TUNING.md)]. You may wish to use a data-science capable LLM along with README and TUNING to start tune your parameters.
+
 ### Default
 
 ```bash
@@ -241,21 +243,4 @@ python cluster.py \
 * [https://github.com/copilot/c/782cdd8e-fd1c-4ad2-92de-53d0dc1905d7](https://github.com/copilot/c/782cdd8e-fd1c-4ad2-92de-53d0dc1905d7)
 * [https://chatgpt.com/](https://chatgpt.com/)
 
----
 
-## What This Version Achieves
-
-* No duplicated sections
-* No contradictory UMAP claims
-* No “5D is optimal”
-* No “better clusters” promises
-* Honest about O(n²)
-* Explicit about float runtimes
-* Explicit about default field fallbacks
-* Professional, publication-level tone
-
-If you'd like next, we can:
-
-* Add a minimal architecture diagram,
-* Add a short “Design Rationale” section (why CodeBERT + HDBSCAN),
-* Or prepare this for a technical blog post or conference demo.
