@@ -26,7 +26,7 @@ pip install -r requirements.txt
 
 ```bash
 python cluster.py \
-  --input example/example-input-queries.csv \
+  --input examples/simple/example-input-queries.csv \
   --output-summary output/summary.csv \
   --output-samples output/cluster-samples.csv
 ```
