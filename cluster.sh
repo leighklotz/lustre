@@ -9,7 +9,7 @@ cd ${SCRIPT_DIR}
 source .venv/bin/activate
 
 if [ ! -n "$INPUT" ]; then
-    echo "Specify input file e.g. example-input-queries.csv"
+    echo "Specify input file e.g. example/example-input-queries.csv"
     exit 1
 fi
 python cluster.py \

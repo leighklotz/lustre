@@ -88,11 +88,20 @@ def load_queries_from_csv(csv_file):
     with open(csv_file, 'r') as f:
         reader = csv.reader(f, delimiter=delimiter)
         header = next(reader)  # Skip the header row
-        # assert header == ['query', 'runtime', 'count', 'users']
+        query, runtime, count, users = ['', '1.0', '1', '']
         for row in reader:
             if len(row) > 0:
-                query, runtime, count, users, *_ = row + [1,1,""]
-                queries.append((query, int(runtime), int(count), users))
+                query = row[0]
+                if len(row) > 1:
+                    runtime = row[1]
+                if len(row) == 2:
+                    raise Exception(f"What is {row=}")
+                if len(row) == 3:
+                    users = row[2]
+                if len(row) == 4:
+                    count = row[2]
+                    users = row[3]
+                queries.append((query, float(runtime), int(count), users))
     return queries
 
 
