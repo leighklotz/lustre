@@ -26,5 +26,5 @@ python cluster.py \
   --cluster-selection-method eom \
   --alpha 1.0 \
   --num-samples-to-show 10 \
-  --visualize-umap output/umap_viz.png 
+  --visualize-umap output/umap_viz.png \
   --visualize-tsne output/tsne_viz.png 
