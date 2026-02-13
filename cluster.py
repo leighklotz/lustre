@@ -432,6 +432,9 @@ def main(spl_queries, summary_output=None, samples_output=None,
     pca = PCA(n_components=n_pca_components, random_state=0)
     reduced_embeddings = pca.fit_transform(embeddings)
 
+    # Normalize embeddings after PCA as well
+    reduced_embeddings = reduced_embeddings / np.linalg.norm(reduced_embeddings, axis=1, keepdims=True)
+
     # Optional UMAP reduction before clustering
     if use_umap_before_clustering:
         if not UMAP_AVAILABLE:
