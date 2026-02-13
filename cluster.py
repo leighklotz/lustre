@@ -420,6 +420,9 @@ def main(spl_queries, summary_output=None, samples_output=None,
     # build embedding matrix: (n_samples, hidden)
     embeddings = np.vstack([get_embedding(q[0]) for q in spl_queries]).astype(np.float64)
 
+    # Normalize embeddings before PCA
+    embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+
     # Dimensionality reduction (PCA)
     # Use 50 components if UMAP will be applied, otherwise 10
     n_pca_components = 50 if use_umap_before_clustering else 10
